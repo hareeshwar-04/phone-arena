@@ -27,30 +27,44 @@ CPU_ANTUTU = {
     "Snapdragon 8s Gen 4": 1800000,
     "Snapdragon 8s Gen 3": 1500000,
     "Snapdragon 8 Gen 2": 1550000,
+    "Snapdragon 8+ Gen 1": 1300000,
+    "Snapdragon 8 Gen 1": 1050000,
     "Snapdragon 7+ Gen 4": 1550000,
     "Snapdragon 7+ Gen 3": 1350000,
     "Snapdragon 7s Gen 4": 1100000,
     "Snapdragon 7s Gen 3": 950000,
+    "Snapdragon 7s Gen 2": 600000,
     "Snapdragon 7 Gen 3": 850000,
+    "Snapdragon 778G": 550000,
     "Snapdragon 6 Gen 4": 750000,
     "Snapdragon 6 Gen 3": 700000,
+    "Snapdragon 6s Gen 3": 500000,
     "Snapdragon 6 Gen 1": 550000,
+    "Snapdragon 685": 350000,
+    "Snapdragon 4 Gen 2": 450000,
     "Dimensity 9500": 3050000,
     "Dimensity 9400": 2600000,
     "Dimensity 9300": 2200000,
+    "Dimensity 9200": 1500000,
     "Dimensity 8400": 1600000,
     "Dimensity 8350": 1450000,
     "Dimensity 8300": 1400000,
     "Dimensity 8200": 950000,
+    "Dimensity 8100": 800000,
     "Dimensity 7350": 950000,
     "Dimensity 7300": 850000,
     "Dimensity 7200": 720000,
     "Dimensity 7050": 600000,
+    "Dimensity 7020": 450000,
+    "Dimensity 6100 Plus": 400000,
+    "Dimensity 6080": 400000,
+    "Helio G99": 400000,
     "Exynos 2600": 2700000,
     "Exynos 2500": 2200000,
     "Exynos 2400": 1700000,
     "Exynos 1580": 1200000,
     "Exynos 1480": 720000,
+    "Exynos 1380": 550000,
     "Tensor G5": 2000000,
     "Tensor G4": 1500000,
     "Tensor G3": 1100000,
@@ -58,22 +72,25 @@ CPU_ANTUTU = {
     "Apple A18 Pro": 2500000,
     "Apple A18": 2300000,
     "Apple A17 Pro": 1600000,
+    "Apple A16": 1400000,
+    "Apple A15": 1200000,
 }
 
 def match_cpu_score(cpu_name: str) -> int:
-    name = cpu_name.lower().strip()
+    name_clean = cpu_name.lower().replace(" ", "").replace("+", "plus").replace("-", "")
     for key, score in CPU_ANTUTU.items():
-        if key.lower() in name:
+        clean_key = key.lower().replace(" ", "").replace("+", "plus").replace("-", "")
+        if clean_key in name_clean:
             return score
-    if "snapdragon 8" in name: return 1800000
-    if "snapdragon 7" in name: return 1000000
-    if "snapdragon 6" in name: return 600000
-    if "dimensity 9" in name: return 2200000
-    if "dimensity 8" in name: return 1200000
-    if "dimensity 7" in name: return 750000
-    if "dimensity 6" in name: return 450000
-    if "exynos" in name: return 1000000
-    if "apple" in name: return 2000000
+    if "snapdragon8" in name_clean: return 1800000
+    if "snapdragon7" in name_clean: return 1000000
+    if "snapdragon6" in name_clean: return 600000
+    if "dimensity9" in name_clean: return 2200000
+    if "dimensity8" in name_clean: return 1200000
+    if "dimensity7" in name_clean: return 750000
+    if "dimensity6" in name_clean: return 450000
+    if "exynos" in name_clean: return 1000000
+    if "apple" in name_clean: return 2000000
     return 600000
 
 # ── Normalization Engine ────────────────────────────────
@@ -198,10 +215,12 @@ def scrape_live_phones(limit=200) -> list[dict]:
             
             for li in specs:
                 t = li.get_text(strip=True).lower()
-                if "processor" in t or "core" in t or "bionic" in t or "tensor" in t:
-                    # Perfect extraction: Search for known CPU names directly in the string
+                if "processor" in t or "core" in t or "bionic" in t or "tensor" in t or "snapdragon" in t or "dimensity" in t:
+                    # Flawless extraction: Strip spaces and punctuation to defeat Smartprix typos
+                    t_clean = t.replace(" ", "").replace("+", "plus").replace("-", "")
                     for k in CPU_ANTUTU.keys():
-                        if k.lower() in t:
+                        k_clean = k.lower().replace(" ", "").replace("+", "plus").replace("-", "")
+                        if k_clean in t_clean:
                             cpu_name = k
                             break
                     if cpu_name == "Unknown":
