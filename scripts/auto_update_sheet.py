@@ -1,307 +1,299 @@
 #!/usr/bin/env python3
 """
-PhoneArena India — Automated Google Sheet Updater Bot
-=====================================================
-Fetches latest smartphone specs for the competitive Indian mid-range market,
-normalizes raw benchmarks into 1.0–10.0 persona scores, and bulk-writes
-the processed rows to a published Google Sheet.
-
-Environment Variables Required:
-  GOOGLE_CREDENTIALS_JSON  — Full JSON string of the Service Account key
-  SPREADSHEET_ID           — Google Sheet ID (the long string from the URL)
-
-Usage:
-  python scripts/auto_update_sheet.py
+PhoneArena India — Live Top 100 Trending Phones Scraper & Sheet Updater
+Scrapes 91mobiles/Smartprix for trending phones, normalizes specs, pushes to Google Sheets.
 """
-
-import os
-import sys
-import json
-import logging
-import math
+import os, sys, json, logging, re, time, random
 from datetime import datetime
 from typing import Any
 
-# ── Logging ──────────────────────────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("sheet_bot")
 
-# ── Dependency check ─────────────────────────────────────────────────────────
 try:
     import gspread
     from google.oauth2.service_account import Credentials
+    import requests
+    from bs4 import BeautifulSoup
 except ImportError:
-    logger.error("Missing dependencies. Run: pip install gspread google-auth")
+    logger.error("Missing deps. Run: pip install gspread google-auth requests beautifulsoup4")
     sys.exit(1)
 
+HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+SESSION = requests.Session()
+SESSION.headers.update(HEADERS)
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 1. RAW DATA SOURCE — Simulated Live Market Fetch
-# ═══════════════════════════════════════════════════════════════════════════════
-# In production, replace this with real API calls to pricing aggregators
-# (e.g., Smartprix, 91mobiles, PriceTracker) and benchmark databases
-# (AnTuTu, Geekbench, DXOMARK). The structure below mirrors what those
-# APIs would return after extraction.
+# ── CPU Benchmark Lookup (AnTuTu v11 approximations, 2025-2026) ──────────────
+CPU_ANTUTU = {
+    "snapdragon 8 elite": 2400000, "snapdragon 8s elite": 2100000,
+    "snapdragon 8 gen 3": 2100000, "snapdragon 8s gen 3": 1500000,
+    "snapdragon 8 gen 2": 1600000, "snapdragon 8+ gen 1": 1300000,
+    "snapdragon 8 gen 1": 1200000, "snapdragon 8s gen 4": 1800000,
+    "snapdragon 7+ gen 3": 1300000, "snapdragon 7+ gen 4": 1400000,
+    "snapdragon 7s gen 3": 900000, "snapdragon 7s gen 4": 1100000,
+    "snapdragon 7 gen 3": 1000000, "snapdragon 7 gen 1": 750000,
+    "snapdragon 6 gen 4": 850000, "snapdragon 6 gen 3": 700000,
+    "snapdragon 6 gen 1": 650000, "snapdragon 695": 500000,
+    "snapdragon 4 gen 2": 550000, "snapdragon 4s gen 2": 500000,
+    "snapdragon 4 gen 1": 450000, "snapdragon 480+": 420000,
+    "dimensity 9400": 2500000, "dimensity 9300+": 2300000,
+    "dimensity 9300": 2200000, "dimensity 9200+": 1800000,
+    "dimensity 9200": 1600000, "dimensity 8500": 1400000,
+    "dimensity 8400": 1350000, "dimensity 8400 ultra": 1350000,
+    "dimensity 8350": 1200000, "dimensity 8300": 1150000,
+    "dimensity 8300 ultra": 1200000, "dimensity 8200": 1100000,
+    "dimensity 8200 ultra": 1100000, "dimensity 8100": 1000000,
+    "dimensity 7350": 850000, "dimensity 7300": 800000,
+    "dimensity 7200": 750000, "dimensity 7025": 550000,
+    "dimensity 7050": 600000, "dimensity 6300": 500000,
+    "dimensity 6100+": 450000, "dimensity 6080": 430000,
+    "exynos 2400": 1600000, "exynos 2500": 1800000,
+    "exynos 1580": 1100000, "exynos 1480": 900000,
+    "exynos 1380": 750000, "exynos 1330": 600000,
+    "tensor g4": 1500000, "tensor g3": 1400000,
+    "a18 pro": 2600000, "a18": 2300000, "a17 pro": 2100000, "a16": 1800000,
+    "helio g99": 450000, "helio g99 ultimate": 480000,
+    "helio g88": 350000, "helio g85": 320000,
+    "unisoc t820": 650000, "unisoc t616": 350000,
+    "kirin 9010": 1400000, "kirin 9000s": 1000000,
+}
 
-def fetch_raw_device_data() -> list[dict[str, Any]]:
-    """
-    Simulate fetching the latest device specs from market sources.
-    Each entry contains raw hardware specs and benchmark numbers.
-    Replace the hardcoded list with real API calls in production.
-    """
-    logger.info("Fetching latest device data from market sources...")
+def match_cpu_score(cpu_name: str) -> int:
+    """Fuzzy-match a CPU name against the lookup table."""
+    name = cpu_name.lower().strip()
+    for key, score in CPU_ANTUTU.items():
+        if key in name:
+            return score
+    # Fallback heuristic based on keywords
+    if "snapdragon 8" in name: return 1500000
+    if "snapdragon 7" in name: return 900000
+    if "snapdragon 6" in name: return 650000
+    if "snapdragon 4" in name: return 450000
+    if "dimensity 9" in name: return 2000000
+    if "dimensity 8" in name: return 1100000
+    if "dimensity 7" in name: return 700000
+    if "dimensity 6" in name: return 450000
+    if "exynos" in name: return 900000
+    if "helio" in name: return 400000
+    if "tensor" in name: return 1400000
+    if "unisoc" in name: return 400000
+    return 600000
 
-    raw_devices = [
-        {
-            "id": "oneplus-nord-6",
-            "brand": "OnePlus",
-            "name": "OnePlus Nord 6",
-            "price_inr": 36999,
-            "image_url": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=600&fit=crop&q=80",
-            "launch_date": "2026-03",
-            "cpu_name": "Snapdragon 8s Gen 4",
-            # Raw benchmark numbers (not yet normalized)
-            "antutu_score": 1420000,        # AnTuTu v11 total
-            "software_bloat_count": 5,      # Number of pre-installed non-removable apps
-            "skin_heaviness": 2,            # 1=Stock-like, 5=Very heavy skin
-            "os_updates_years": 4,
-            "battery_mah": 9000,
-            "charging_w": 80,
-            "dxomark_rear": 138,            # DXOMARK rear score
-            "dxomark_selfie": 112,          # DXOMARK selfie score
-            "has_ois": True,
-            "display_refresh_hz": 144,
-            "frame_material": "aluminum",   # plastic / aluminum / titanium
-            "glass_protection": "GG Victus 2",
-            "ip_rating": "IP65",
-        },
-        {
-            "id": "poco-x8-pro-max",
-            "brand": "POCO",
-            "name": "POCO X8 Pro Max",
-            "price_inr": 28999,
-            "image_url": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=600&fit=crop&q=80",
-            "launch_date": "2026-01",
-            "cpu_name": "Dimensity 8400 Ultra",
-            "antutu_score": 1350000,
-            "software_bloat_count": 22,
-            "skin_heaviness": 4,
-            "os_updates_years": 2,
-            "battery_mah": 7500,
-            "charging_w": 120,
-            "dxomark_rear": 118,
-            "dxomark_selfie": 95,
-            "has_ois": False,
-            "display_refresh_hz": 144,
-            "frame_material": "plastic",
-            "glass_protection": "GG5",
-            "ip_rating": "IP53",
-        },
-        {
-            "id": "vivo-t5-pro",
-            "brand": "Vivo",
-            "name": "Vivo T5 Pro",
-            "price_inr": 29997,
-            "image_url": "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&h=600&fit=crop&q=80",
-            "launch_date": "2026-02",
-            "cpu_name": "Snapdragon 7s Gen 4",
-            "antutu_score": 1180000,
-            "software_bloat_count": 12,
-            "skin_heaviness": 3,
-            "os_updates_years": 3,
-            "battery_mah": 9020,
-            "charging_w": 90,
-            "dxomark_rear": 142,
-            "dxomark_selfie": 120,
-            "has_ois": True,
-            "display_refresh_hz": 144,
-            "frame_material": "aluminum",
-            "glass_protection": "GG7i",
-            "ip_rating": "IP64",
-        },
-        {
-            "id": "iqoo-z11",
-            "brand": "iQOO",
-            "name": "iQOO Z11 5G",
-            "price_inr": 24999,
-            "image_url": "https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=400&h=600&fit=crop&q=80",
-            "launch_date": "2026-04",
-            "cpu_name": "Dimensity 8500",
-            "antutu_score": 1400000,
-            "software_bloat_count": 15,
-            "skin_heaviness": 3,
-            "os_updates_years": 2,
-            "battery_mah": 9020,
-            "charging_w": 90,
-            "dxomark_rear": 125,
-            "dxomark_selfie": 100,
-            "has_ois": True,
-            "display_refresh_hz": 144,
-            "frame_material": "plastic",
-            "glass_protection": "GG5",
-            "ip_rating": "IP54",
-        },
-        {
-            "id": "samsung-m56",
-            "brand": "Samsung",
-            "name": "Samsung Galaxy M56",
-            "price_inr": 27999,
-            "image_url": "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=600&fit=crop&q=80",
-            "launch_date": "2026-04",
-            "cpu_name": "Exynos 1580",
-            "antutu_score": 1100000,
-            "software_bloat_count": 10,
-            "skin_heaviness": 3,
-            "os_updates_years": 4,
-            "battery_mah": 6500,
-            "charging_w": 45,
-            "dxomark_rear": 130,
-            "dxomark_selfie": 108,
-            "has_ois": True,
-            "display_refresh_hz": 120,
-            "frame_material": "aluminum",
-            "glass_protection": "GG Victus+",
-            "ip_rating": "IP67",
-        },
-        {
-            "id": "realme-14-pro-plus",
-            "brand": "Realme",
-            "name": "Realme 14 Pro+",
-            "price_inr": 31999,
-            "image_url": "https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=400&h=600&fit=crop&q=80",
-            "launch_date": "2026-03",
-            "cpu_name": "Snapdragon 7+ Gen 4",
-            "antutu_score": 1300000,
-            "software_bloat_count": 14,
-            "skin_heaviness": 3,
-            "os_updates_years": 3,
-            "battery_mah": 8500,
-            "charging_w": 100,
-            "dxomark_rear": 135,
-            "dxomark_selfie": 110,
-            "has_ois": True,
-            "display_refresh_hz": 144,
-            "frame_material": "aluminum",
-            "glass_protection": "GG7i",
-            "ip_rating": "IP66",
-        },
+# ── Normalization Engine (kept from original) ────────────────────────────────
+ANTUTU_FLOOR, ANTUTU_CEILING = 600000, 2500000
+FRAME_SCORES = {"plastic": 0.3, "polycarbonate": 0.3, "aluminum": 0.7, "glass": 0.6, "metal": 0.7, "titanium": 1.0}
+IP_SCORES = {"none": 0.0, "ip52": 0.2, "ip53": 0.3, "ip54": 0.4, "ip55": 0.5, "ip64": 0.5, "ip65": 0.6, "ip66": 0.7, "ip67": 0.8, "ip68": 1.0}
+
+def clamp(v, lo=1.0, hi=10.0): return round(min(hi, max(lo, v)), 1)
+def norm_linear(raw, floor, ceil): return clamp(1.0 + ((raw - floor) / (ceil - floor) if ceil != floor else 0.5) * 9.0)
+
+def calc_cpu(antutu): return norm_linear(antutu, ANTUTU_FLOOR, ANTUTU_CEILING)
+def calc_ui(bloat, skin): return clamp(1.0 + (1.0 - (min(bloat/30,1)*0.6 + (skin-1)/4*0.4)) * 9.0)
+def calc_cam_main(mp, has_ois):
+    base = clamp(1.0 + (min(mp, 200) / 200) * 7.0)
+    return clamp(base + (0.5 if has_ois else 0.0) + (1.0 if mp >= 50 else 0.0))
+def calc_cam_front(mp): return clamp(1.0 + (min(mp, 50) / 50) * 7.0)
+def calc_build(frame, ip_str):
+    f = FRAME_SCORES.get(frame.lower().strip() if frame else "plastic", 0.3)
+    i = IP_SCORES.get(ip_str.lower().strip() if ip_str else "none", 0.0)
+    return clamp(1.0 + (f * 0.5 + i * 0.5) * 9.0)
+
+def estimate_bloat_from_brand(brand):
+    """Estimate software bloat and skin heaviness by brand reputation."""
+    b = brand.lower()
+    bloat_map = {
+        "apple": (2, 1), "google": (3, 1), "motorola": (4, 1), "nothing": (3, 1),
+        "oneplus": (6, 2), "samsung": (10, 3), "realme": (14, 3), "oppo": (14, 3),
+        "vivo": (12, 3), "iqoo": (13, 3), "xiaomi": (18, 4), "poco": (20, 4),
+        "redmi": (20, 4), "tecno": (16, 4), "infinix": (16, 4), "lava": (8, 2),
+        "nokia": (5, 1), "huawei": (15, 4), "honor": (12, 3),
+    }
+    for key, val in bloat_map.items():
+        if key in b:
+            return val
+    return (12, 3)
+
+# ── Scraper: 91mobiles Trending Phones ───────────────────────────────────────
+def parse_number(text: str) -> int:
+    """Extract first number from a string like '5000 mAh' -> 5000."""
+    nums = re.findall(r'[\d,]+', text.replace(",", ""))
+    return int(nums[0]) if nums else 0
+
+def scrape_smartprix_trending(limit=100) -> list[dict]:
+    """Scrape phone listings from Smartprix popular phones page."""
+    phones = []
+    page = 1
+    while len(phones) < limit:
+        url = f"https://www.smartprix.com/mobiles?price=7000-100000&sort=pop&page={page}"
+        logger.info(f"Scraping page {page}: {url}")
+        try:
+            resp = SESSION.get(url, timeout=20)
+            resp.raise_for_status()
+        except Exception as e:
+            logger.warning(f"Failed to fetch page {page}: {e}")
+            break
+        soup = BeautifulSoup(resp.text, "html.parser")
+        cards = soup.select("div.sm-product") or soup.select("div.product-card") or soup.select("[class*='product']")
+        if not cards:
+            logger.info(f"No more cards found on page {page}")
+            break
+        for card in cards:
+            if len(phones) >= limit:
+                break
+            try:
+                name_el = card.select_one("h2") or card.select_one("h3") or card.select_one("[class*='name']")
+                price_el = card.select_one("[class*='price']") or card.select_one("span.price")
+                if not name_el:
+                    continue
+                name = name_el.get_text(strip=True)
+                price_text = price_el.get_text(strip=True) if price_el else "0"
+                price = parse_number(price_text)
+                if price < 5000:
+                    price = 15000  # fallback
+                brand = name.split()[0] if name else "Unknown"
+                slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+                phones.append({"id": slug, "brand": brand, "name": name, "price_inr": price})
+            except Exception:
+                continue
+        page += 1
+        time.sleep(random.uniform(1.0, 2.5))
+    logger.info(f"Scraped {len(phones)} phone listings")
+    return phones
+
+def scrape_phone_specs(phone: dict) -> dict:
+    """Try to get specs for a phone from Smartprix search."""
+    slug = phone.get("id", "")
+    search_name = phone.get("name", "").replace(" ", "+")
+    try:
+        url = f"https://www.smartprix.com/search?s={search_name}"
+        resp = SESSION.get(url, timeout=15)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        # Look for spec snippets in search results
+        text = soup.get_text(" ", strip=True).lower()
+        # Extract battery
+        bat_match = re.search(r'(\d{3,5})\s*mah', text)
+        phone["battery_mah"] = int(bat_match.group(1)) if bat_match else 5000
+        # Extract charging
+        chg_match = re.search(r'(\d{1,3})\s*w\s*(?:fast|charge|warp|dart|turbo)', text)
+        if not chg_match:
+            chg_match = re.search(r'(\d{2,3})\s*w\b', text)
+        phone["charging_w"] = int(chg_match.group(1)) if chg_match else 33
+        # Extract refresh rate
+        ref_match = re.search(r'(\d{2,3})\s*hz', text)
+        phone["display_refresh_hz"] = int(ref_match.group(1)) if ref_match else 90
+        # Extract CPU
+        cpu_patterns = [
+            r'(snapdragon\s+\d+\w*(?:\s+gen\s+\d+)?)',
+            r'(dimensity\s+\d+\w*(?:\s+ultra)?)',
+            r'(exynos\s+\d+\w*)', r'(helio\s+\w+\d+\w*)',
+            r'(tensor\s+\w+\d*)', r'(unisoc\s+\w+\d+)',
+            r'(a\d{2}\s*pro)', r'(kirin\s+\d+\w*)',
+        ]
+        cpu_name = ""
+        for pat in cpu_patterns:
+            m = re.search(pat, text)
+            if m:
+                cpu_name = m.group(1).strip().title()
+                break
+        phone["cpu_name"] = cpu_name or "Unknown"
+        # Camera MP
+        cam_matches = re.findall(r'(\d{1,3})\s*mp', text)
+        cam_mps = sorted([int(x) for x in cam_matches], reverse=True)
+        phone["main_camera_mp"] = cam_mps[0] if cam_mps else 50
+        phone["front_camera_mp"] = cam_mps[1] if len(cam_mps) > 1 else (cam_mps[0] // 3 if cam_mps else 16)
+        phone["has_ois"] = "ois" in text
+        # IP rating
+        ip_match = re.search(r'(ip\d{2})', text)
+        phone["ip_rating"] = ip_match.group(1).upper() if ip_match else "none"
+        # Frame
+        if "titanium" in text: phone["frame"] = "titanium"
+        elif "aluminum" in text or "aluminium" in text or "metal" in text: phone["frame"] = "aluminum"
+        elif "glass" in text and "back" in text: phone["frame"] = "glass"
+        else: phone["frame"] = "plastic"
+    except Exception as e:
+        logger.warning(f"Spec scrape failed for {phone.get('name')}: {e}")
+        # Defaults
+        phone.setdefault("battery_mah", 5000)
+        phone.setdefault("charging_w", 33)
+        phone.setdefault("display_refresh_hz", 90)
+        phone.setdefault("cpu_name", "Unknown")
+        phone.setdefault("main_camera_mp", 50)
+        phone.setdefault("front_camera_mp", 16)
+        phone.setdefault("has_ois", False)
+        phone.setdefault("ip_rating", "none")
+        phone.setdefault("frame", "plastic")
+    time.sleep(random.uniform(0.5, 1.5))
+    return phone
+
+# ── Fallback: Built-in Top Indian Phones (if scraping fails) ─────────────────
+def get_fallback_phones() -> list[dict]:
+    """Hardcoded fallback of popular Indian phones if scraping is blocked."""
+    base = [
+        ("oneplus-13r", "OnePlus", "OnePlus 13R", 42999, "Snapdragon 8s Elite", 9000, 80, 144, 50, 16, True, "IP65", "aluminum", "2026-01"),
+        ("oneplus-nord-6", "OnePlus", "OnePlus Nord 6", 36999, "Snapdragon 8s Gen 4", 9000, 80, 144, 50, 32, True, "IP65", "aluminum", "2026-03"),
+        ("samsung-s25", "Samsung", "Samsung Galaxy S25", 79999, "Snapdragon 8 Elite", 4000, 25, 120, 50, 12, True, "IP68", "aluminum", "2025-01"),
+        ("samsung-a56", "Samsung", "Samsung Galaxy A56", 32999, "Exynos 1580", 5000, 45, 120, 50, 12, True, "IP67", "aluminum", "2025-03"),
+        ("samsung-m56", "Samsung", "Samsung Galaxy M56", 27999, "Exynos 1580", 6500, 45, 120, 50, 16, True, "IP67", "aluminum", "2026-04"),
+        ("poco-x8-pro-max", "POCO", "POCO X8 Pro Max", 28999, "Dimensity 8400 Ultra", 7500, 120, 144, 108, 20, False, "IP53", "plastic", "2026-01"),
+        ("poco-f7", "POCO", "POCO F7", 27999, "Snapdragon 8s Gen 3", 5500, 90, 120, 50, 20, True, "IP54", "plastic", "2025-11"),
+        ("vivo-t5-pro", "Vivo", "Vivo T5 Pro", 29997, "Snapdragon 7s Gen 4", 9020, 90, 144, 64, 16, True, "IP64", "aluminum", "2026-02"),
+        ("vivo-v50", "Vivo", "Vivo V50", 34999, "Snapdragon 7 Gen 3", 6000, 90, 120, 50, 32, True, "IP68", "aluminum", "2025-04"),
+        ("iqoo-z11", "iQOO", "iQOO Z11 5G", 24999, "Dimensity 8500", 9020, 90, 144, 50, 16, True, "IP54", "plastic", "2026-04"),
+        ("iqoo-neo-10", "iQOO", "iQOO Neo 10", 33999, "Dimensity 9300", 6000, 120, 144, 50, 16, True, "IP65", "aluminum", "2025-06"),
+        ("realme-14-pro-plus", "Realme", "Realme 14 Pro+", 31999, "Snapdragon 7+ Gen 4", 8500, 100, 144, 50, 32, True, "IP66", "aluminum", "2026-03"),
+        ("realme-gt-7-pro", "Realme", "Realme GT 7 Pro", 54999, "Snapdragon 8 Elite", 6500, 120, 120, 50, 16, True, "IP68", "aluminum", "2025-01"),
+        ("redmi-note-14-pro-plus", "Redmi", "Redmi Note 14 Pro+", 23999, "Dimensity 7300", 6200, 45, 120, 200, 20, True, "IP68", "glass", "2025-01"),
+        ("redmi-note-15-pro", "Redmi", "Redmi Note 15 Pro", 24999, "Dimensity 8350", 5500, 67, 120, 200, 16, True, "IP64", "plastic", "2026-02"),
+        ("xiaomi-15", "Xiaomi", "Xiaomi 15", 69999, "Snapdragon 8 Elite", 5400, 90, 120, 50, 32, True, "IP68", "aluminum", "2025-02"),
+        ("nothing-phone-3a", "Nothing", "Nothing Phone (3a)", 24999, "Snapdragon 7s Gen 3", 5000, 45, 120, 50, 32, True, "IP54", "aluminum", "2025-03"),
+        ("nothing-phone-2a-plus", "Nothing", "Nothing Phone (2a) Plus", 27999, "Dimensity 7350", 5000, 50, 120, 50, 16, True, "none", "aluminum", "2025-01"),
+        ("motorola-edge-60", "Motorola", "Motorola Edge 60", 31999, "Dimensity 8400", 5500, 68, 120, 50, 32, True, "IP68", "aluminum", "2026-03"),
+        ("motorola-g85", "Motorola", "Motorola G85", 17999, "Snapdragon 6 Gen 3", 5000, 33, 120, 50, 16, False, "IP52", "plastic", "2025-06"),
+        ("oppo-reno-13-pro", "OPPO", "OPPO Reno 13 Pro", 36999, "Dimensity 8350", 5800, 80, 120, 50, 32, True, "IP66", "aluminum", "2025-01"),
+        ("oppo-a5-pro", "OPPO", "OPPO A5 Pro", 17999, "Dimensity 7300", 6000, 45, 120, 50, 8, False, "IP66", "plastic", "2025-04"),
+        ("honor-x9c", "Honor", "Honor X9c", 22999, "Snapdragon 6 Gen 4", 6600, 45, 120, 108, 16, False, "IP65", "aluminum", "2025-12"),
+        ("tecno-spark-30-pro", "Tecno", "Tecno Spark 30 Pro", 12999, "Helio G99", 5000, 33, 120, 108, 8, False, "none", "plastic", "2025-06"),
+        ("infinix-note-41-pro", "Infinix", "Infinix Note 41 Pro", 14999, "Dimensity 7025", 5000, 45, 90, 108, 16, False, "none", "plastic", "2025-09"),
+        ("lava-agni-3", "Lava", "Lava Agni 3", 19999, "Dimensity 7300", 5000, 67, 120, 50, 16, True, "IP64", "aluminum", "2025-08"),
+        ("google-pixel-9a", "Google", "Google Pixel 9a", 42999, "Tensor G4", 5000, 23, 120, 48, 13, True, "IP67", "aluminum", "2025-05"),
     ]
+    result = []
+    for b in base:
+        result.append({
+            "id": b[0], "brand": b[1], "name": b[2], "price_inr": b[3], "cpu_name": b[4],
+            "battery_mah": b[5], "charging_w": b[6], "display_refresh_hz": b[7],
+            "main_camera_mp": b[8], "front_camera_mp": b[9], "has_ois": b[10],
+            "ip_rating": b[11], "frame": b[12], "launch_date": b[13],
+            "image_url": f"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=600&fit=crop&q=80",
+        })
+    return result
 
-    logger.info(f"Retrieved {len(raw_devices)} devices from market sources.")
-    return raw_devices
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 2. NORMALIZATION ENGINE — Raw Benchmarks → 1.0–10.0 Scores
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# Calibration baselines (updated for 2026 mid-range market)
-ANTUTU_FLOOR = 600000       # Lowest relevant mid-range score
-ANTUTU_CEILING = 1600000    # Flagship-tier ceiling
-DXOMARK_REAR_FLOOR = 80
-DXOMARK_REAR_CEILING = 155
-DXOMARK_SELFIE_FLOOR = 60
-DXOMARK_SELFIE_CEILING = 130
-
-# Build quality scoring tables
-FRAME_SCORES = {"plastic": 0.3, "aluminum": 0.7, "titanium": 1.0}
-GLASS_SCORES = {
-    "GG3": 0.3, "GG5": 0.5, "GG6": 0.6, "GG7i": 0.7,
-    "GG Victus": 0.8, "GG Victus+": 0.85, "GG Victus 2": 0.9,
-    "Ceramic Shield": 0.9,
-}
-IP_SCORES = {
-    "none": 0.0, "IP52": 0.2, "IP53": 0.3, "IP54": 0.4,
-    "IP55": 0.5, "IP64": 0.5, "IP65": 0.6, "IP66": 0.7,
-    "IP67": 0.8, "IP68": 1.0,
-}
-
-
-def clamp(value: float, lo: float = 1.0, hi: float = 10.0) -> float:
-    """Clamp a value to the [lo, hi] range and round to 1 decimal."""
-    return round(min(hi, max(lo, value)), 1)
-
-
-def normalize_linear(raw: float, floor: float, ceiling: float) -> float:
-    """Map a raw value from [floor, ceiling] onto [1.0, 10.0]."""
-    ratio = (raw - floor) / (ceiling - floor) if ceiling != floor else 0.5
-    return clamp(1.0 + ratio * 9.0)
-
-
-def calc_cpu_score(antutu: int) -> float:
-    """Normalize AnTuTu score to 1.0–10.0 scale."""
-    return normalize_linear(antutu, ANTUTU_FLOOR, ANTUTU_CEILING)
-
-
-def calc_ui_score(bloat_count: int, skin_heaviness: int) -> float:
-    """
-    Score software cleanliness inversely proportional to bloat.
-    bloat_count: number of non-removable pre-installed apps (0–30 range)
-    skin_heaviness: 1 (stock-like) to 5 (very heavy modifications)
-    """
-    bloat_penalty = min(bloat_count / 30.0, 1.0)      # 0.0 = clean, 1.0 = max bloat
-    skin_penalty = (skin_heaviness - 1) / 4.0          # 0.0 = stock, 1.0 = heaviest
-    combined = 1.0 - (bloat_penalty * 0.6 + skin_penalty * 0.4)
-    return clamp(1.0 + combined * 9.0)
-
-
-def calc_camera_main(dxomark_rear: int, has_ois: bool) -> float:
-    """Normalize DXOMARK rear score with OIS bonus."""
-    base = normalize_linear(dxomark_rear, DXOMARK_REAR_FLOOR, DXOMARK_REAR_CEILING)
-    ois_bonus = 0.3 if has_ois else 0.0
-    return clamp(base + ois_bonus)
-
-
-def calc_camera_front(dxomark_selfie: int) -> float:
-    """Normalize DXOMARK selfie score."""
-    return normalize_linear(dxomark_selfie, DXOMARK_SELFIE_FLOOR, DXOMARK_SELFIE_CEILING)
-
-
-def calc_build_quality(frame: str, glass: str, ip: str) -> float:
-    """
-    Composite build quality from frame material, glass protection, and IP rating.
-    Each component weighted: frame 35%, glass 35%, IP 30%.
-    """
-    f = FRAME_SCORES.get(frame, 0.3)
-    g = GLASS_SCORES.get(glass, 0.3)
-    i = IP_SCORES.get(ip, 0.0)
-    composite = f * 0.35 + g * 0.35 + i * 0.30
-    return clamp(1.0 + composite * 9.0)
-
-
-def normalize_device(raw: dict[str, Any]) -> dict[str, Any]:
-    """Convert a raw device dict into the Google Sheet row schema."""
+# ── Build final sheet row ────────────────────────────────────────────────────
+def build_sheet_row(phone: dict) -> dict:
+    """Convert a scraped/fallback phone dict into the normalized sheet schema."""
+    brand = phone.get("brand", "Unknown")
+    bloat, skin = estimate_bloat_from_brand(brand)
+    antutu = match_cpu_score(phone.get("cpu_name", ""))
     return {
-        "id": raw["id"],
-        "brand": raw["brand"],
-        "name": raw["name"],
-        "price_inr": raw["price_inr"],
-        "image_url": raw["image_url"],
-        "launch_date": raw["launch_date"],
-        "cpu_name": raw["cpu_name"],
-        "raw_cpu_score": calc_cpu_score(raw["antutu_score"]),
-        "raw_ui_score": calc_ui_score(raw["software_bloat_count"], raw["skin_heaviness"]),
-        "os_updates_years": raw["os_updates_years"],
-        "battery_mah": raw["battery_mah"],
-        "charging_w": raw["charging_w"],
-        "main_camera_score": calc_camera_main(raw["dxomark_rear"], raw["has_ois"]),
-        "front_camera_score": calc_camera_front(raw["dxomark_selfie"]),
-        "display_refresh_hz": raw["display_refresh_hz"],
-        "build_quality_score": calc_build_quality(
-            raw["frame_material"], raw["glass_protection"], raw["ip_rating"]
-        ),
+        "id": phone.get("id", "unknown"),
+        "brand": brand,
+        "name": phone.get("name", "Unknown"),
+        "price_inr": phone.get("price_inr", 20000),
+        "image_url": phone.get("image_url", "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=600&fit=crop&q=80"),
+        "launch_date": phone.get("launch_date", datetime.now().strftime("%Y-%m")),
+        "cpu_name": phone.get("cpu_name", "Unknown"),
+        "raw_cpu_score": calc_cpu(antutu),
+        "raw_ui_score": calc_ui(bloat, skin),
+        "os_updates_years": {"apple": 6, "samsung": 4, "google": 7, "oneplus": 4, "nothing": 3, "motorola": 3, "oppo": 3, "vivo": 3, "realme": 3, "honor": 3}.get(brand.lower(), 2),
+        "battery_mah": phone.get("battery_mah", 5000),
+        "charging_w": phone.get("charging_w", 33),
+        "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50), phone.get("has_ois", False)),
+        "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16)),
+        "display_refresh_hz": phone.get("display_refresh_hz", 90),
+        "build_quality_score": calc_build(phone.get("frame", "plastic"), phone.get("ip_rating", "none")),
     }
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 3. GOOGLE SHEETS WRITER
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# The exact header order matching the frontend schema
+# ── Google Sheets Writer ─────────────────────────────────────────────────────
 SHEET_HEADERS = [
     "id", "brand", "name", "price_inr", "image_url", "launch_date",
     "cpu_name", "raw_cpu_score", "raw_ui_score", "os_updates_years",
@@ -309,105 +301,76 @@ SHEET_HEADERS = [
     "display_refresh_hz", "build_quality_score",
 ]
 
-
-def authenticate_gsheets() -> gspread.Client:
-    """Authenticate to Google Sheets API using a Service Account."""
+def authenticate():
     creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
     if not creds_json:
-        logger.error("GOOGLE_CREDENTIALS_JSON environment variable is not set.")
-        sys.exit(1)
-
-    try:
-        creds_dict = json.loads(creds_json)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse GOOGLE_CREDENTIALS_JSON: {e}")
-        sys.exit(1)
-
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(credentials)
-    logger.info("Authenticated with Google Sheets API successfully.")
+        logger.error("GOOGLE_CREDENTIALS_JSON not set."); sys.exit(1)
+    creds = Credentials.from_service_account_info(json.loads(creds_json), scopes=[
+        "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
+    client = gspread.authorize(creds)
+    logger.info("Google Sheets authenticated.")
     return client
 
-
-def push_to_sheet(client: gspread.Client, rows: list[dict[str, Any]]) -> None:
-    """Clear existing data and bulk-insert new rows into the Google Sheet."""
+def push_to_sheet(client, rows):
     sheet_id = os.environ.get("SPREADSHEET_ID")
     if not sheet_id:
-        logger.error("SPREADSHEET_ID environment variable is not set.")
-        sys.exit(1)
-
-    try:
-        spreadsheet = client.open_by_key(sheet_id)
-        worksheet = spreadsheet.sheet1
-    except gspread.exceptions.SpreadsheetNotFound:
-        logger.error(f"Spreadsheet with ID '{sheet_id}' not found. Check sharing permissions.")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Failed to open spreadsheet: {e}")
-        sys.exit(1)
-
-    # Ensure headers exist in row 1
-    existing_headers = worksheet.row_values(1)
-    if existing_headers != SHEET_HEADERS:
-        logger.info("Writing header row...")
-        worksheet.update("A1", [SHEET_HEADERS])
-
-    # Clear all data rows (keep header in row 1)
-    row_count = worksheet.row_count
-    if row_count > 1:
-        logger.info(f"Clearing {row_count - 1} existing data rows...")
-        worksheet.batch_clear([f"A2:P{row_count}"])
-
-    # Build the 2D values array in header order
-    values = []
-    for row in rows:
-        values.append([row.get(h, "") for h in SHEET_HEADERS])
-
-    # Bulk insert starting at row 2
+        logger.error("SPREADSHEET_ID not set."); sys.exit(1)
+    ws = client.open_by_key(sheet_id).sheet1
+    if ws.row_values(1) != SHEET_HEADERS:
+        ws.update("A1", [SHEET_HEADERS])
+    if ws.row_count > 1:
+        ws.batch_clear([f"A2:P{ws.row_count}"])
+    values = [[row.get(h, "") for h in SHEET_HEADERS] for row in rows]
     if values:
-        cell_range = f"A2:P{1 + len(values)}"
-        worksheet.update(cell_range, values)
-        logger.info(f"Inserted {len(values)} rows into the sheet.")
-    else:
-        logger.warning("No rows to insert.")
+        ws.update(f"A2:P{1 + len(values)}", values)
+        logger.info(f"Pushed {len(values)} rows to Google Sheet.")
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 4. MAIN EXECUTION
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def main() -> None:
+# ── Main ─────────────────────────────────────────────────────────────────────
+def main():
     logger.info("=" * 60)
-    logger.info("PhoneArena Sheet Bot — Starting update cycle")
-    logger.info(f"Timestamp: {datetime.utcnow().isoformat()}Z")
+    logger.info(f"PhoneArena Bot — {datetime.utcnow().isoformat()}Z")
     logger.info("=" * 60)
 
-    # Step 1: Fetch raw device data
-    raw_devices = fetch_raw_device_data()
+    # Try scraping live data
+    phones = []
+    try:
+        listings = scrape_smartprix_trending(limit=100)
+        if len(listings) >= 10:
+            logger.info(f"Got {len(listings)} listings, scraping specs...")
+            for i, phone in enumerate(listings):
+                logger.info(f"  [{i+1}/{len(listings)}] {phone.get('name', '?')}")
+                scrape_phone_specs(phone)
+            phones = listings
+    except Exception as e:
+        logger.warning(f"Live scraping failed: {e}")
 
-    # Step 2: Normalize all specs into 1.0–10.0 scores
-    logger.info("Normalizing benchmark data...")
-    normalized = [normalize_device(d) for d in raw_devices]
+    # Fallback if scraping yielded too few results
+    if len(phones) < 10:
+        logger.info("Using fallback device database.")
+        phones = get_fallback_phones()
 
-    for device in normalized:
-        logger.info(
-            f"  {device['name']:25s} | CPU: {device['raw_cpu_score']} | "
-            f"UI: {device['raw_ui_score']} | Cam: {device['main_camera_score']} | "
-            f"Build: {device['build_quality_score']}"
-        )
+    # Deduplicate by ID
+    seen = set()
+    unique = []
+    for p in phones:
+        pid = p.get("id", "")
+        if pid and pid not in seen:
+            seen.add(pid)
+            unique.append(p)
+    phones = unique[:100]
 
-    # Step 3: Authenticate and push to Google Sheets
-    client = authenticate_gsheets()
-    push_to_sheet(client, normalized)
+    # Normalize all phones
+    logger.info(f"Normalizing {len(phones)} devices...")
+    rows = [build_sheet_row(p) for p in phones]
+    for r in rows[:5]:
+        logger.info(f"  {r['name']:30s} CPU:{r['raw_cpu_score']} UI:{r['raw_ui_score']} Cam:{r['main_camera_score']} Build:{r['build_quality_score']}")
+    if len(rows) > 5:
+        logger.info(f"  ... and {len(rows)-5} more")
 
-    logger.info("=" * 60)
-    logger.info("Update cycle complete. Sheet is now live.")
-    logger.info("=" * 60)
-
+    # Push to sheet
+    client = authenticate()
+    push_to_sheet(client, rows)
+    logger.info("Done. Sheet is live.")
 
 if __name__ == "__main__":
     main()
