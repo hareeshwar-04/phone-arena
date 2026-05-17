@@ -238,6 +238,7 @@ def scrape_live_phones(limit=200) -> list[dict]:
             refresh_hz = 120
             main_mp = 50
             front_mp = 16
+            screen_type = "Unknown"
             
             for li in specs:
                 t = li.get_text(strip=True).lower()
@@ -259,6 +260,12 @@ def scrape_live_phones(limit=200) -> list[dict]:
                 if "display" in t or "inches" in t:
                     rm = re.search(r'(\d{2,3})\s*hz', t)
                     if rm: refresh_hz = int(rm.group(1))
+                    
+                    if "amoled" in t: screen_type = "AMOLED"
+                    elif "poled" in t or "p-oled" in t: screen_type = "P-OLED"
+                    elif "oled" in t: screen_type = "OLED"
+                    elif "lcd" in t or "ips" in t: screen_type = "IPS LCD"
+                    
                 if "camera" in t:
                     if "front" in t:
                         parts = t.split("&")
@@ -282,6 +289,7 @@ def scrape_live_phones(limit=200) -> list[dict]:
                 "battery_mah": battery_mah,
                 "charging_w": charging_w,
                 "display_refresh_hz": refresh_hz,
+                "screen_type": screen_type,
                 "main_camera_mp": main_mp,
                 "front_camera_mp": front_mp,
             })
@@ -298,6 +306,10 @@ def build_sheet_row(phone: dict) -> dict:
     antutu = match_cpu_score(cpu, price)
     ram_type, ufs_type = infer_hardware(cpu, price)
     
+    screen_t = phone.get("screen_type", "Unknown")
+    if screen_t == "Unknown":
+        screen_t = infer_screen(price)
+    
     return {
         "id": phone.get("id", "unknown"),
         "brand": brand,
@@ -309,7 +321,7 @@ def build_sheet_row(phone: dict) -> dict:
         "antutu_score": antutu,
         "storage_type": ufs_type,
         "ram_type": ram_type,
-        "screen_type": infer_screen(price),
+        "screen_type": screen_t,
         "raw_cpu_score": calc_cpu(antutu),
         "raw_ui_score": calc_ui(bloat, skin),
         "os_updates_years": {"apple": 6, "samsung": 4, "google": 7, "oneplus": 4, "nothing": 3, "motorola": 3}.get(brand.lower(), 2),
