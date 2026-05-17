@@ -9,6 +9,7 @@ import { ComparisonMatrix } from "./ComparisonMatrix";
 
 const SHEET_URL = "https://opensheet.elk.sh/1yhvi3qx40ijUz2RyQ7Vojfxx3ZGoyWcaUgTisWfOGmM/Sheet1";
 type ViewMode = "discover" | "compare";
+type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "battery";
 
 function parseSheetRow(row: Record<string, string>): PhoneSpec {
   return {
@@ -40,6 +41,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("discover");
+  const [sortBy, setSortBy] = useState<SortOption>("match");
   const [comparedIds, setComparedIds] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([10000, 200000]);
@@ -77,6 +79,18 @@ export default function App() {
   }, [phonesWithRatings, selectedBrands, priceRange]);
 
   const sortedPhones = useWeightedSort(filteredPhones, weights);
+  
+  const finalSortedPhones = useMemo(() => {
+    const list = [...sortedPhones];
+    if (sortBy === "match") return list;
+    if (sortBy === "price_asc") return list.sort((a, b) => a.price_inr - b.price_inr);
+    if (sortBy === "price_desc") return list.sort((a, b) => b.price_inr - a.price_inr);
+    if (sortBy === "performance") return list.sort((a, b) => b.raw_cpu_score - a.raw_cpu_score);
+    if (sortBy === "camera") return list.sort((a, b) => b.main_camera_score - a.main_camera_score);
+    if (sortBy === "battery") return list.sort((a, b) => b.battery_mah - a.battery_mah);
+    return list;
+  }, [sortedPhones, sortBy]);
+
   const comparedPhones = useMemo(() => phonesWithRatings.filter((p) => comparedIds.includes(p.id)), [phonesWithRatings, comparedIds]);
 
   const toggleCompare = useCallback((id: string) => {
@@ -178,8 +192,22 @@ export default function App() {
             {/* Phone Grid */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-200">
-                <p className="font-semibold text-neutral-700">{loading ? "Loading database..." : `${sortedPhones.length} matches found`}</p>
-                <p className="text-xs text-neutral-500 uppercase tracking-widest font-semibold">Sorted by Score</p>
+                <p className="font-semibold text-neutral-700 text-sm sm:text-base">{loading ? "Loading database..." : `${finalSortedPhones.length} matches found`}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest font-semibold hidden sm:inline">Sort by:</span>
+                  <select 
+                    value={sortBy} 
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="text-[10px] sm:text-xs font-bold p-1 sm:p-1.5 rounded border border-neutral-200 bg-white text-neutral-700 outline-none cursor-pointer"
+                  >
+                    <option value="match">Match Score</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="performance">Best Performance</option>
+                    <option value="camera">Best Camera</option>
+                    <option value="battery">Largest Battery</option>
+                  </select>
+                </div>
               </div>
               
               {loading ? (
@@ -188,13 +216,13 @@ export default function App() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {sortedPhones.map((phone) => (
+                  {finalSortedPhones.map((phone) => (
                     <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={weights} />
                   ))}
                 </div>
               )}
               
-              {!loading && sortedPhones.length === 0 && (
+              {!loading && finalSortedPhones.length === 0 && (
                 <div className="text-center py-20 bg-white border border-neutral-200 rounded mt-4">
                   <Monitor size={48} className="mx-auto text-neutral-300 mb-4" />
                   <h3 className="text-lg font-bold text-neutral-800 mb-1">No matches found</h3>

@@ -385,7 +385,7 @@ def main():
     logger.info(f"PhoneArena Bot — Fetching 200 Live Phones ({datetime.utcnow().isoformat()})")
     logger.info("=" * 60)
 
-    phones = scrape_live_phones(limit=220)
+    phones = scrape_live_phones(limit=350)
     
     # Deduplicate
     seen = set()
@@ -394,7 +394,7 @@ def main():
         if p["id"] not in seen:
             seen.add(p["id"])
             unique.append(p)
-    phones = unique[:200]
+    phones = unique[:300]
     
     logger.info(f"Normalizing {len(phones)} unique devices...")
     rows = [build_sheet_row(p) for p in phones]
