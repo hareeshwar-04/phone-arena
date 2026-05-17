@@ -155,24 +155,24 @@ def parse_number(text: str) -> int:
 
 def scrape_live_phones(limit=200) -> list[dict]:
     phones = []
-    page = 1
-    # Increased to 250 phones to ensure we hit the limit
-    while len(phones) < limit:
-        url = f"https://www.smartprix.com/mobiles?price=7000-150000&sort=pop&page={page}"
-        logger.info(f"Fetching page {page}: {url}")
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'})
+    brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno"]
+    
+    for brand in brands:
+        if len(phones) >= limit: break
+        url = f"https://www.smartprix.com/mobiles/{brand}-brand"
+        logger.info(f"Fetching {brand}: {url}")
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/115.0'})
         try:
             resp = urllib.request.urlopen(req, timeout=15)
             html = resp.read().decode('utf-8')
         except Exception as e:
-            logger.warning(f"Failed to fetch page {page}: {e}")
-            break
+            logger.warning(f"Failed to fetch {brand}: {e}")
+            continue
         
         soup = BeautifulSoup(html, "html.parser")
         cards = soup.select("div.sm-product")
         if not cards:
-            logger.info("No more cards found.")
-            break
+            continue
             
         for card in cards:
             if len(phones) >= limit: break
@@ -199,7 +199,13 @@ def scrape_live_phones(limit=200) -> list[dict]:
             for li in specs:
                 t = li.get_text(strip=True).lower()
                 if "processor" in t or "core" in t or "bionic" in t or "tensor" in t:
-                    cpu_name = t.split(",")[0].title()
+                    # Perfect extraction: Search for known CPU names directly in the string
+                    for k in CPU_ANTUTU.keys():
+                        if k.lower() in t:
+                            cpu_name = k
+                            break
+                    if cpu_name == "Unknown":
+                        cpu_name = t.split(",")[0].title()
                 if "mah" in t:
                     bm = re.search(r'(\d{3,5})\s*mah', t)
                     if bm: battery_mah = int(bm.group(1))
@@ -234,7 +240,6 @@ def scrape_live_phones(limit=200) -> list[dict]:
                 "main_camera_mp": main_mp,
                 "front_camera_mp": front_mp,
             })
-        page += 1
         time.sleep(1.0)
         
     return phones
