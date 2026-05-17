@@ -130,6 +130,24 @@ def estimate_bloat_from_brand(brand):
         if key in b: return val
     return (12, 3)
 
+def infer_hardware(cpu_name, price):
+    name = cpu_name.lower()
+    ram = "LPDDR4X"
+    ufs = "UFS 2.2"
+    if "gen 5" in name or "gen 4" in name or "dimensity 9" in name or "apple a1" in name or "exynos 2" in name or "tensor g" in name:
+        ram = "LPDDR5X"; ufs = "UFS 4.0"
+    elif "gen 3" in name or "gen 2" in name or "dimensity 8" in name or "exynos 1" in name:
+        ram = "LPDDR5"; ufs = "UFS 3.1"
+    if price > 55000:
+        ram = "LPDDR5X"; ufs = "UFS 4.0"
+    elif price > 25000 and ufs == "UFS 2.2":
+        ram = "LPDDR5"; ufs = "UFS 3.1"
+    return ram, ufs
+
+def infer_screen(price):
+    if price >= 15000: return "AMOLED"
+    return "IPS LCD"
+
 # ── Scraper ────────────────────────────────────────────────────────
 def parse_number(text: str) -> int:
     nums = re.findall(r'[\d,]+', text.replace(",", ""))
@@ -225,30 +243,39 @@ def scrape_live_phones(limit=200) -> list[dict]:
 def build_sheet_row(phone: dict) -> dict:
     brand = phone.get("brand", "Unknown")
     bloat, skin = estimate_bloat_from_brand(brand)
-    antutu = match_cpu_score(phone.get("cpu_name", ""))
+    cpu = phone.get("cpu_name", "Unknown")
+    price = phone.get("price_inr", 20000)
+    antutu = match_cpu_score(cpu)
+    ram_type, ufs_type = infer_hardware(cpu, price)
+    
     return {
         "id": phone.get("id", "unknown"),
         "brand": brand,
         "name": phone.get("name", "Unknown"),
-        "price_inr": phone.get("price_inr", 20000),
+        "price_inr": price,
         "image_url": phone.get("image_url", ""),
         "launch_date": phone.get("launch_date", "2026"),
-        "cpu_name": phone.get("cpu_name", "Unknown"),
+        "cpu_name": cpu,
+        "antutu_score": antutu,
+        "storage_type": ufs_type,
+        "ram_type": ram_type,
+        "screen_type": infer_screen(price),
         "raw_cpu_score": calc_cpu(antutu),
         "raw_ui_score": calc_ui(bloat, skin),
         "os_updates_years": {"apple": 6, "samsung": 4, "google": 7, "oneplus": 4, "nothing": 3, "motorola": 3}.get(brand.lower(), 2),
         "battery_mah": phone.get("battery_mah", 5000),
         "charging_w": phone.get("charging_w", 33),
-        "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50), phone.get("price_inr", 20000), phone.get("name", "")),
-        "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16), phone.get("price_inr", 20000)),
+        "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50), price, phone.get("name", "")),
+        "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16), price),
         "display_refresh_hz": phone.get("display_refresh_hz", 90),
-        "build_quality_score": calc_build(phone.get("price_inr", 20000)),
+        "build_quality_score": calc_build(price),
     }
 
 # ── Google Sheets Writer ─────────────────────────────────────────────────────
 SHEET_HEADERS = [
     "id", "brand", "name", "price_inr", "image_url", "launch_date",
-    "cpu_name", "raw_cpu_score", "raw_ui_score", "os_updates_years",
+    "cpu_name", "antutu_score", "storage_type", "ram_type", "screen_type",
+    "raw_cpu_score", "raw_ui_score", "os_updates_years",
     "battery_mah", "charging_w", "main_camera_score", "front_camera_score",
     "display_refresh_hz", "build_quality_score",
 ]

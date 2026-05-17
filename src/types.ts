@@ -20,6 +20,10 @@ export interface PhoneSpec {
   front_camera_score: number;
   display_refresh_hz: number;
   build_quality_score: number;
+  antutu_score: number;
+  storage_type: string;
+  ram_type: string;
+  screen_type: string;
 }
 
 /** Computed persona ratings derived from the formula engine */
@@ -63,6 +67,10 @@ export const mockPhones: PhoneSpec[] = [
     front_camera_score: 7.5,
     display_refresh_hz: 144,
     build_quality_score: 8.0,
+    antutu_score: 1800000,
+    storage_type: "UFS 4.0",
+    ram_type: "LPDDR5X",
+    screen_type: "AMOLED"
   },
   {
     id: "poco-x8-pro-max",
@@ -81,6 +89,10 @@ export const mockPhones: PhoneSpec[] = [
     front_camera_score: 6.0,
     display_refresh_hz: 144,
     build_quality_score: 6.5,
+    antutu_score: 1600000,
+    storage_type: "UFS 3.1",
+    ram_type: "LPDDR5",
+    screen_type: "AMOLED"
   },
   {
     id: "vivo-t5-pro",
@@ -99,6 +111,10 @@ export const mockPhones: PhoneSpec[] = [
     front_camera_score: 8.5,
     display_refresh_hz: 144,
     build_quality_score: 7.5,
+    antutu_score: 1100000,
+    storage_type: "UFS 3.1",
+    ram_type: "LPDDR5",
+    screen_type: "AMOLED"
   },
   {
     id: "iqoo-z11",
@@ -117,6 +133,10 @@ export const mockPhones: PhoneSpec[] = [
     front_camera_score: 6.5,
     display_refresh_hz: 144,
     build_quality_score: 7.0,
+    antutu_score: 1550000,
+    storage_type: "UFS 3.1",
+    ram_type: "LPDDR5",
+    screen_type: "AMOLED"
   },
 ];
 

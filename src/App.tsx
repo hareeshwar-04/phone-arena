@@ -28,6 +28,10 @@ function parseSheetRow(row: Record<string, string>): PhoneSpec {
     front_camera_score: Number(row.front_camera_score) || 0,
     display_refresh_hz: Number(row.display_refresh_hz) || 0,
     build_quality_score: Number(row.build_quality_score) || 0,
+    antutu_score: Number(row.antutu_score) || 0,
+    storage_type: row.storage_type || "UFS 2.2",
+    ram_type: row.ram_type || "LPDDR4X",
+    screen_type: row.screen_type || "IPS LCD",
   };
 }
 
@@ -84,40 +88,40 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-violet-500/30 selection:text-white">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans antialiased selection:bg-blue-500/20 selection:text-blue-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-zinc-950/80 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20 border border-white/10">
-              <Smartphone size={18} className="text-white" />
+            <div className="w-10 h-10 rounded bg-blue-600 flex items-center justify-center shadow-sm">
+              <Smartphone size={20} className="text-white" />
             </div>
             <div>
-              <h1 className="text-base font-extrabold tracking-tight text-white">PhoneArena<span className="text-violet-500">.</span></h1>
-              <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-500 mt-0.5">India 2026 Edition</p>
+              <h1 className="text-lg font-bold tracking-tight text-neutral-900">PhoneArena</h1>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Database</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {/* View Tabs */}
-            <div className="hidden sm:flex items-center rounded-xl bg-zinc-900/80 border border-zinc-800/80 p-1 shadow-inner">
-              <button onClick={() => setView("discover")} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${view === "discover" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
-                <span className="flex items-center gap-2"><Search size={13} /> Discover</span>
+            <div className="hidden sm:flex items-center rounded bg-neutral-100 p-1 border border-neutral-200">
+              <button onClick={() => setView("discover")} className={`px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${view === "discover" ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" : "text-neutral-500 hover:text-neutral-700"}`}>
+                <span className="flex items-center gap-2"><Search size={14} /> Browse</span>
               </button>
-              <button onClick={() => setView("compare")} className={`relative px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${view === "compare" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
-                <span className="flex items-center gap-2"><Layers size={13} /> Matrix</span>
-                {comparedIds.length > 0 && <span className="absolute -top-1 -right-1.5 w-4 h-4 rounded-full bg-fuchsia-500 border-2 border-zinc-900 text-[9px] font-bold text-white flex items-center justify-center shadow-lg">{comparedIds.length}</span>}
+              <button onClick={() => setView("compare")} className={`relative px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${view === "compare" ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" : "text-neutral-500 hover:text-neutral-700"}`}>
+                <span className="flex items-center gap-2"><Layers size={14} /> Compare</span>
+                {comparedIds.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
               </button>
             </div>
             {/* Mobile tabs */}
-            <div className="flex sm:hidden items-center gap-1.5">
-              <button onClick={() => setView("discover")} className={`p-2 rounded-xl transition-all ${view === "discover" ? "bg-zinc-800 text-white" : "text-zinc-500"}`}><Search size={18} /></button>
-              <button onClick={() => setView("compare")} className={`relative p-2 rounded-xl transition-all ${view === "compare" ? "bg-zinc-800 text-white" : "text-zinc-500"}`}>
-                <Layers size={18} />
-                {comparedIds.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-fuchsia-500 border-2 border-zinc-900 text-[8px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
+            <div className="flex sm:hidden items-center gap-2">
+              <button onClick={() => setView("discover")} className={`p-2 rounded transition-colors ${view === "discover" ? "bg-blue-50 text-blue-600" : "text-neutral-500"}`}><Search size={20} /></button>
+              <button onClick={() => setView("compare")} className={`relative p-2 rounded transition-colors ${view === "compare" ? "bg-blue-50 text-blue-600" : "text-neutral-500"}`}>
+                <Layers size={20} />
+                {comparedIds.length > 0 && <span className="absolute 0 -right-0 w-4 h-4 rounded-full bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
               </button>
             </div>
-            <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2 rounded-xl bg-zinc-900 text-zinc-400 hover:text-white transition-colors border border-zinc-800">
-              <SlidersHorizontal size={18} />
+            <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
+              <SlidersHorizontal size={20} />
             </button>
           </div>
         </div>
@@ -126,9 +130,9 @@ export default function App() {
       {/* Error banner */}
       {fetchError && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
-          <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 flex items-center justify-between backdrop-blur-md">
-            <span className="text-xs text-rose-400 font-semibold">{fetchError}</span>
-            <button onClick={() => setFetchError(null)} className="text-rose-500/60 hover:text-rose-400"><X size={16} /></button>
+          <div className="rounded bg-red-50 border border-red-200 px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-red-700 font-medium">{fetchError}</span>
+            <button onClick={() => setFetchError(null)} className="text-red-500 hover:text-red-700"><X size={18} /></button>
           </div>
         </div>
       )}
@@ -136,15 +140,13 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* ===== COMPARE MATRIX VIEW ===== */}
         {view === "compare" && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div>
             {comparedPhones.length === 0 ? (
-              <div className="text-center py-32">
-                <div className="w-20 h-20 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-black/20">
-                  <Layers size={32} className="text-zinc-600" />
-                </div>
-                <h3 className="text-lg font-bold text-zinc-200 mb-2">Matrix is empty</h3>
-                <p className="text-sm text-zinc-500 font-medium mb-6">Switch to Discover and add up to 4 devices to compare.</p>
-                <button onClick={() => setView("discover")} className="px-6 py-3 rounded-xl bg-white text-zinc-950 text-xs font-bold uppercase tracking-wider hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10">Browse Phones</button>
+              <div className="text-center py-20 bg-white border border-neutral-200 rounded p-10">
+                <Layers size={40} className="mx-auto text-neutral-300 mb-4" />
+                <h3 className="text-lg font-bold text-neutral-800 mb-2">No Devices Selected</h3>
+                <p className="text-neutral-500 mb-6">Go back to the database and select devices to compare side-by-side.</p>
+                <button onClick={() => setView("discover")} className="px-6 py-2.5 rounded bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors">Browse Database</button>
               </div>
             ) : (
               <ComparisonMatrix phones={comparedPhones} onRemove={toggleCompare} />
@@ -154,10 +156,10 @@ export default function App() {
 
         {/* ===== DISCOVER HUB VIEW ===== */}
         {view === "discover" && (
-          <div className="flex gap-8 animate-in fade-in duration-500">
+          <div className="flex gap-8">
             {/* Sidebar — Desktop */}
             <aside className="hidden lg:block w-64 flex-shrink-0">
-              <div className="sticky top-24 rounded-3xl border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/40">
+              <div className="sticky top-24 bg-white border border-neutral-200 rounded p-6 shadow-sm">
                 <FilterSidebar brands={brands} selectedBrands={selectedBrands} onToggleBrand={toggleBrand} priceRange={priceRange} onPriceChange={setPriceRange} weights={weights} onWeightChange={setWeights} />
               </div>
             </aside>
@@ -165,9 +167,9 @@ export default function App() {
             {/* Mobile Filter Drawer */}
             {mobileFilterOpen && (
               <div className="fixed inset-0 z-50 lg:hidden">
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setMobileFilterOpen(false)} />
-                <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] rounded-t-[2rem] bg-zinc-950 border-t border-zinc-800 p-6 overflow-y-auto shadow-2xl">
-                  <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6" />
+                <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setMobileFilterOpen(false)} />
+                <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] bg-white rounded-t-xl p-6 overflow-y-auto">
+                  <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6" />
                   <FilterSidebar brands={brands} selectedBrands={selectedBrands} onToggleBrand={toggleBrand} priceRange={priceRange} onPriceChange={setPriceRange} weights={weights} onWeightChange={setWeights} />
                 </div>
               </div>
@@ -175,20 +177,17 @@ export default function App() {
 
             {/* Phone Grid */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-6 bg-zinc-900/50 backdrop-blur-md border border-zinc-800/50 rounded-xl px-4 py-3">
-                <p className="text-xs text-zinc-400 font-bold tracking-wide">{loading ? "Fetching live market data…" : `Showing ${sortedPhones.length} device${sortedPhones.length !== 1 ? "s" : ""}`}</p>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.8)] animate-pulse" />
-                  <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-[0.15em] font-bold">Live AI Rank</p>
-                </div>
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-200">
+                <p className="font-semibold text-neutral-700">{loading ? "Loading database..." : `${sortedPhones.length} matches found`}</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-widest font-semibold">Sorted by Score</p>
               </div>
               
               {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                  <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {sortedPhones.map((phone) => (
                     <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={weights} />
                   ))}
@@ -196,27 +195,16 @@ export default function App() {
               )}
               
               {!loading && sortedPhones.length === 0 && (
-                <div className="text-center py-24 bg-zinc-900/20 border border-zinc-800/50 rounded-3xl mt-4">
-                  <Monitor size={48} className="mx-auto text-zinc-800 mb-4" />
-                  <h3 className="text-lg font-bold text-zinc-300 mb-1">No matches found</h3>
-                  <p className="text-sm text-zinc-500 font-medium">Try adjusting your filters or budget cap.</p>
+                <div className="text-center py-20 bg-white border border-neutral-200 rounded mt-4">
+                  <Monitor size={48} className="mx-auto text-neutral-300 mb-4" />
+                  <h3 className="text-lg font-bold text-neutral-800 mb-1">No matches found</h3>
+                  <p className="text-neutral-500">Adjust your price filters or brand selections.</p>
                 </div>
               )}
             </div>
           </div>
         )}
       </main>
-
-      <footer className="border-t border-zinc-900 mt-20 bg-black/20">
-        <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] text-zinc-600 font-semibold tracking-widest uppercase">PhoneArena India © 2026</p>
-          <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
-            <span>Live Aggregation</span>
-            <span className="w-1 h-1 rounded-full bg-zinc-700" />
-            <span>AI Ranked</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

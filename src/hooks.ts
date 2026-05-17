@@ -4,28 +4,35 @@ import type { PhoneSpec, PersonaRatings, PhoneWithRatings, WeightConfig } from "
 // ---- Core Formula Functions ----
 
 function calcDurability(p: PhoneSpec): number {
+  const storageBonus = p.storage_type.includes("4.0") ? 0.3 : p.storage_type.includes("3.1") ? 0.1 : 0;
   const score =
     (Math.min(p.os_updates_years, 7) / 7) * 10 * 0.35 +
     p.raw_ui_score * 0.25 +
     (Math.min(p.battery_mah, 6500) / 6500) * 10 * 0.2 +
     p.build_quality_score * 0.15 +
-    p.raw_cpu_score * 0.05;
+    p.raw_cpu_score * 0.05 + storageBonus;
   const normalized = 4.0 + (Math.min(10, score) / 10) * 6.0;
   return Math.round(normalized * 10) / 10;
 }
 
 function calcGaming(p: PhoneSpec): number {
+  const storageBonus = p.storage_type.includes("4.0") ? 0.4 : p.storage_type.includes("3.1") ? 0.2 : 0;
+  const ramBonus = p.ram_type.includes("5X") ? 0.2 : 0;
+  const screenBonus = p.screen_type.includes("AMOLED") || p.screen_type.includes("OLED") ? 0.3 : 0;
+  
   const score =
     p.raw_cpu_score * 0.5 +
     (Math.min(p.display_refresh_hz, 144) / 144) * 10 * 0.25 +
     (Math.min(p.charging_w, 120) / 120) * 10 * 0.15 +
-    (Math.min(p.battery_mah, 6500) / 6500) * 10 * 0.1;
+    (Math.min(p.battery_mah, 6500) / 6500) * 10 * 0.1 +
+    storageBonus + ramBonus + screenBonus;
   const normalized = 4.0 + (Math.min(10, score) / 10) * 6.0;
   return Math.round(normalized * 10) / 10;
 }
 
 function calcCreator(p: PhoneSpec): number {
-  const score = p.main_camera_score * 0.7 + p.front_camera_score * 0.3;
+  const screenBonus = p.screen_type.includes("AMOLED") || p.screen_type.includes("OLED") ? 0.5 : 0;
+  const score = p.main_camera_score * 0.7 + p.front_camera_score * 0.3 + screenBonus;
   const normalized = 4.0 + (Math.min(10, score) / 10) * 6.0;
   return Math.round(normalized * 10) / 10;
 }
