@@ -28,31 +28,31 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
   return (
     <div className="space-y-4">
       {verdicts.length > 0 && (
-        <div className="rounded-2xl bg-gradient-to-r from-cyan-500/5 via-emerald-500/5 to-cyan-500/5 border border-cyan-500/15 backdrop-blur-xl p-5 shadow-2xl shadow-cyan-900/10">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent mb-3 flex items-center gap-2">
-            <Trophy size={14} className="text-cyan-400" /> AI Verdict
+        <div className="rounded-2xl bg-gradient-to-r from-violet-500/10 via-fuchsia-500/5 to-violet-500/10 border border-violet-500/20 backdrop-blur-xl p-5 shadow-2xl shadow-violet-900/10">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-3 flex items-center gap-2">
+            <Trophy size={14} className="text-violet-400" /> AI Verdict
           </h3>
           <ul className="space-y-2">
             {verdicts.map((v, i) => (
-              <li key={i} className="text-sm text-slate-300 leading-relaxed flex items-start gap-2">
-                <ChevronRight size={13} className="text-cyan-400/60 mt-0.5 flex-shrink-0" />
+              <li key={i} className="text-sm text-zinc-300 leading-relaxed flex items-start gap-2">
+                <ChevronRight size={13} className="text-violet-400/60 mt-0.5 flex-shrink-0" />
                 <span>{v}</span>
               </li>
             ))}
           </ul>
         </div>
       )}
-      <div className="rounded-2xl border border-slate-800/50 overflow-hidden backdrop-blur-xl bg-slate-900/20 shadow-2xl shadow-cyan-900/5">
+      <div className="rounded-2xl border border-zinc-800/80 overflow-hidden backdrop-blur-xl bg-zinc-900/40 shadow-2xl shadow-black/50">
         <div className="overflow-x-auto hide-scrollbar">
           <table className="w-full min-w-[500px]">
             <thead>
-              <tr className="border-b border-slate-800/60">
-                <th className="sticky left-0 z-10 bg-slate-950/95 backdrop-blur-xl px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] w-36 min-w-[144px]">Spec</th>
+              <tr className="border-b border-zinc-800/80">
+                <th className="sticky left-0 z-10 bg-zinc-950/95 backdrop-blur-xl px-4 py-3 text-left text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] w-36 min-w-[144px]">Spec</th>
                 {phones.map((p) => (
-                  <th key={p.id} className="px-4 py-3 text-center min-w-[140px]">
+                  <th key={p.id} className="px-4 py-3 text-center min-w-[140px] bg-zinc-900/20">
                     <div className="flex flex-col items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-200 tracking-tight truncate max-w-[120px]">{p.name}</span>
-                      <button onClick={() => onRemove(p.id)} className="text-slate-600 hover:text-red-400 transition-colors"><X size={11} /></button>
+                      <span className="text-xs font-bold text-zinc-100 tracking-tight truncate max-w-[120px]">{p.name}</span>
+                      <button onClick={() => onRemove(p.id)} className="text-zinc-500 hover:text-rose-400 transition-colors"><X size={11} /></button>
                     </div>
                   </th>
                 ))}
@@ -61,17 +61,34 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
             <tbody>
               {rows.map((row) => {
                 const vals = phones.map((p) => row.getValue(p));
-                const best = row.higherBetter ? Math.max(...vals) : Math.min(...vals);
+                // Calculate unique sorted values to determine ranks
+                const sortedUnique = [...new Set(vals)].sort((a, b) => row.higherBetter ? b - a : a - b);
+                
                 return (
-                  <tr key={row.key} className="border-b border-slate-800/30 hover:bg-slate-800/10 transition-colors">
-                    <td className="sticky left-0 z-10 bg-slate-950/95 backdrop-blur-xl px-4 py-2.5 text-[11px] font-semibold text-slate-400 tracking-wide">{row.label}</td>
+                  <tr key={row.key} className="border-b border-zinc-800/40 hover:bg-zinc-800/30 transition-colors">
+                    <td className="sticky left-0 z-10 bg-zinc-950/95 backdrop-blur-xl px-4 py-3 text-[11px] font-semibold text-zinc-400 tracking-wide border-r border-zinc-800/50">{row.label}</td>
                     {phones.map((p, idx) => {
                       const v = vals[idx];
-                      const isWin = v === best && phones.length > 1;
+                      const rank = sortedUnique.indexOf(v) + 1;
+                      const isFirst = rank === 1 && phones.length > 1;
                       const display = row.fmt ? row.fmt(v) : v.toString();
+                      
                       return (
-                        <td key={p.id} className={`px-4 py-2.5 text-center text-sm font-bold font-mono transition-all duration-200 ${isWin ? "text-emerald-400 border border-emerald-500/30 bg-emerald-500/5 rounded-lg" : "text-slate-300"}`}>
-                          {display}
+                        <td key={p.id} className={`px-4 py-3 text-center transition-all duration-200 relative ${isFirst ? "bg-violet-500/5" : ""}`}>
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className={`text-sm font-bold font-mono ${isFirst ? "text-violet-400" : "text-zinc-300"}`}>
+                              {display}
+                            </span>
+                            {phones.length > 1 && (
+                              <div className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full inline-block ${
+                                rank === 1 ? "bg-violet-500/20 text-violet-300 border border-violet-500/30" : 
+                                rank === 2 ? "bg-zinc-700/30 text-zinc-400 border border-zinc-700/50" : 
+                                "text-zinc-600"
+                              }`}>
+                                {rank === 1 ? "🥇 #1" : rank === 2 ? "🥈 #2" : `#${rank}`}
+                              </div>
+                            )}
+                          </div>
                         </td>
                       );
                     })}
