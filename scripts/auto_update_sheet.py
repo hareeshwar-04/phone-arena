@@ -21,6 +21,7 @@ except ImportError:
 
 # ── CPU Benchmark Lookup (Accurate AnTuTu v11/v10 baselines for 2026) ────────
 CPU_ANTUTU = {
+    "Snapdragon 8 Elite Gen 5": 3300000,
     "Snapdragon 8 Elite": 3100000,
     "Snapdragon 8 Gen 5": 3000000,
     "Snapdragon 8 Gen 4": 2500000,
