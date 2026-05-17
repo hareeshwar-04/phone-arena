@@ -1,4 +1,4 @@
-import { Trophy, ChevronRight, X } from "lucide-react";
+import { Trophy, ChevronRight, X, Zap, Camera, Shield, Star } from "lucide-react";
 import type { PhoneWithRatings } from "./types";
 import { formatINR } from "./types";
 import { useVerdict } from "./hooks";
@@ -25,8 +25,14 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
 
   if (phones.length === 0) return null;
 
+  // Calculate Winners
+  const gamingWinner = phones.reduce((prev, curr) => (prev.raw_cpu_score > curr.raw_cpu_score) ? prev : curr);
+  const cameraWinner = phones.reduce((prev, curr) => (prev.main_camera_score > curr.main_camera_score) ? prev : curr);
+  const durabilityWinner = phones.reduce((prev, curr) => (prev.os_updates_years + prev.build_quality_score > curr.os_updates_years + curr.build_quality_score) ? prev : curr);
+  const vfmWinner = phones.reduce((prev, curr) => (prev.ratings.vfm > curr.ratings.vfm) ? prev : curr);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {verdicts.length > 0 && (
         <div className="rounded-2xl bg-gradient-to-r from-violet-500/10 via-fuchsia-500/5 to-violet-500/10 border border-violet-500/20 backdrop-blur-xl p-5 shadow-2xl shadow-violet-900/10">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-3 flex items-center gap-2">
@@ -42,6 +48,8 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
           </ul>
         </div>
       )}
+      
+      {/* Comparison Table */}
       <div className="rounded-2xl border border-zinc-800/80 overflow-hidden backdrop-blur-xl bg-zinc-900/40 shadow-2xl shadow-black/50">
         <div className="overflow-x-auto hide-scrollbar">
           <table className="w-full min-w-[500px]">
@@ -61,34 +69,19 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
             <tbody>
               {rows.map((row) => {
                 const vals = phones.map((p) => row.getValue(p));
-                // Calculate unique sorted values to determine ranks
-                const sortedUnique = [...new Set(vals)].sort((a, b) => row.higherBetter ? b - a : a - b);
+                const best = row.higherBetter ? Math.max(...vals) : Math.min(...vals);
                 
                 return (
                   <tr key={row.key} className="border-b border-zinc-800/40 hover:bg-zinc-800/30 transition-colors">
                     <td className="sticky left-0 z-10 bg-zinc-950/95 backdrop-blur-xl px-4 py-3 text-[11px] font-semibold text-zinc-400 tracking-wide border-r border-zinc-800/50">{row.label}</td>
                     {phones.map((p, idx) => {
                       const v = vals[idx];
-                      const rank = sortedUnique.indexOf(v) + 1;
-                      const isFirst = rank === 1 && phones.length > 1;
+                      const isWin = v === best && phones.length > 1;
                       const display = row.fmt ? row.fmt(v) : v.toString();
                       
                       return (
-                        <td key={p.id} className={`px-4 py-3 text-center transition-all duration-200 relative ${isFirst ? "bg-violet-500/5" : ""}`}>
-                          <div className="flex flex-col items-center justify-center gap-1">
-                            <span className={`text-sm font-bold font-mono ${isFirst ? "text-violet-400" : "text-zinc-300"}`}>
-                              {display}
-                            </span>
-                            {phones.length > 1 && (
-                              <div className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full inline-block ${
-                                rank === 1 ? "bg-violet-500/20 text-violet-300 border border-violet-500/30" : 
-                                rank === 2 ? "bg-zinc-700/30 text-zinc-400 border border-zinc-700/50" : 
-                                "text-zinc-600"
-                              }`}>
-                                {rank === 1 ? "🥇 #1" : rank === 2 ? "🥈 #2" : `#${rank}`}
-                              </div>
-                            )}
-                          </div>
+                        <td key={p.id} className={`px-4 py-2.5 text-center text-sm font-bold font-mono transition-all duration-200 ${isWin ? "text-violet-400 border border-violet-500/30 bg-violet-500/10 rounded-lg" : "text-zinc-300"}`}>
+                          {display}
                         </td>
                       );
                     })}
@@ -99,6 +92,68 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
           </table>
         </div>
       </div>
+
+      {/* Rankings List */}
+      {phones.length > 1 && (
+        <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+            Category Rankings
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Gaming & Performance */}
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-5 backdrop-blur-md shadow-xl transition-all hover:bg-zinc-800/50">
+              <div className="flex items-center gap-2 text-rose-400 mb-3">
+                <Zap size={16} /> <span className="font-bold text-[10px] uppercase tracking-widest">Best for Gaming & Performance</span>
+              </div>
+              <p className="text-zinc-100 font-extrabold text-xl tracking-tight">{gamingWinner.name}</p>
+              <p className="text-zinc-400 text-xs mt-1">Powered by <strong className="text-zinc-300">{gamingWinner.cpu_name}</strong></p>
+              <div className="mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80 pt-3">
+                <span>Source: AnTuTu / Geekbench 6</span>
+                <span className="bg-rose-500/10 text-rose-300 px-2 py-1 rounded">Score: {gamingWinner.raw_cpu_score.toFixed(1)}/10</span>
+              </div>
+            </div>
+
+            {/* Camera */}
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-5 backdrop-blur-md shadow-xl transition-all hover:bg-zinc-800/50">
+              <div className="flex items-center gap-2 text-amber-400 mb-3">
+                <Camera size={16} /> <span className="font-bold text-[10px] uppercase tracking-widest">Best for Photography</span>
+              </div>
+              <p className="text-zinc-100 font-extrabold text-xl tracking-tight">{cameraWinner.name}</p>
+              <p className="text-zinc-400 text-xs mt-1">Hardware capability normalized</p>
+              <div className="mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80 pt-3">
+                <span>Source: DXOMARK / DPReview Standards</span>
+                <span className="bg-amber-500/10 text-amber-300 px-2 py-1 rounded">Score: {cameraWinner.main_camera_score.toFixed(1)}/10</span>
+              </div>
+            </div>
+            
+            {/* Durability */}
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-5 backdrop-blur-md shadow-xl transition-all hover:bg-zinc-800/50">
+              <div className="flex items-center gap-2 text-blue-400 mb-3">
+                <Shield size={16} /> <span className="font-bold text-[10px] uppercase tracking-widest">Long-Term Reliability</span>
+              </div>
+              <p className="text-zinc-100 font-extrabold text-xl tracking-tight">{durabilityWinner.name}</p>
+              <p className="text-zinc-400 text-xs mt-1">{durabilityWinner.os_updates_years} Years OS Updates + Build Quality</p>
+              <div className="mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80 pt-3">
+                <span>Source: JerryRigEverything / OEM Policies</span>
+                <span className="bg-blue-500/10 text-blue-300 px-2 py-1 rounded">Score: {durabilityWinner.build_quality_score.toFixed(1)}/10</span>
+              </div>
+            </div>
+
+            {/* VFM */}
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-5 backdrop-blur-md shadow-xl transition-all hover:bg-zinc-800/50">
+              <div className="flex items-center gap-2 text-emerald-400 mb-3">
+                <Star size={16} /> <span className="font-bold text-[10px] uppercase tracking-widest">Value For Money</span>
+              </div>
+              <p className="text-zinc-100 font-extrabold text-xl tracking-tight">{vfmWinner.name}</p>
+              <p className="text-zinc-400 text-xs mt-1">Best specification-to-price ratio</p>
+              <div className="mt-4 flex items-center justify-between text-[10px] font-mono text-zinc-500 border-t border-zinc-800/80 pt-3">
+                <span>Source: Market Aggregation (Smartprix)</span>
+                <span className="bg-emerald-500/10 text-emerald-300 px-2 py-1 rounded">Score: {vfmWinner.ratings.vfm.toFixed(1)}/10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
