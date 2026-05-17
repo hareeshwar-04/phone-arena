@@ -10,7 +10,8 @@ function calcDurability(p: PhoneSpec): number {
     (Math.min(p.battery_mah, 6500) / 6500) * 10 * 0.2 +
     p.build_quality_score * 0.15 +
     p.raw_cpu_score * 0.05;
-  return Math.round(Math.min(10, score) * 10) / 10;
+  const normalized = 4.0 + (Math.min(10, score) / 10) * 6.0;
+  return Math.round(normalized * 10) / 10;
 }
 
 function calcGaming(p: PhoneSpec): number {
@@ -19,12 +20,14 @@ function calcGaming(p: PhoneSpec): number {
     (Math.min(p.display_refresh_hz, 144) / 144) * 10 * 0.25 +
     (Math.min(p.charging_w, 120) / 120) * 10 * 0.15 +
     (Math.min(p.battery_mah, 6500) / 6500) * 10 * 0.1;
-  return Math.round(Math.min(10, score) * 10) / 10;
+  const normalized = 4.0 + (Math.min(10, score) / 10) * 6.0;
+  return Math.round(normalized * 10) / 10;
 }
 
 function calcCreator(p: PhoneSpec): number {
   const score = p.main_camera_score * 0.7 + p.front_camera_score * 0.3;
-  return Math.round(Math.min(10, score) * 10) / 10;
+  const normalized = 4.0 + (Math.min(10, score) / 10) * 6.0;
+  return Math.round(normalized * 10) / 10;
 }
 
 function calcVFM(durability: number, gaming: number, creator: number, price: number): number {

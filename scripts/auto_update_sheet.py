@@ -84,8 +84,17 @@ def norm_linear(raw, floor, ceil): return clamp(1.0 + ((raw - floor) / (ceil - f
 
 def calc_cpu(antutu): return norm_linear(antutu, ANTUTU_FLOOR, ANTUTU_CEILING)
 def calc_ui(bloat, skin): return clamp(1.0 + (1.0 - (min(bloat/30,1)*0.6 + (skin-1)/4*0.4)) * 9.0)
-def calc_cam_main(mp): return norm_linear(mp, 12, 108)
-def calc_cam_front(mp): return norm_linear(mp, 8, 50)
+def calc_cam_main(mp, price): 
+    # Fix: MP alone is a terrible proxy for quality. A 12MP iPhone beats a 108MP budget phone.
+    # We heavily weigh the price (which correlates perfectly with sensor size, ISP, and optics).
+    price_score = norm_linear(price, 10000, 120000)
+    mp_score = norm_linear(mp, 12, 200)
+    return clamp((price_score * 0.8) + (mp_score * 0.2))
+
+def calc_cam_front(mp, price): 
+    price_score = norm_linear(price, 10000, 100000)
+    mp_score = norm_linear(mp, 8, 50)
+    return clamp((price_score * 0.7) + (mp_score * 0.3))
 def calc_build(price):
     if price > 80000: return 9.5
     if price > 50000: return 8.5
@@ -214,8 +223,8 @@ def build_sheet_row(phone: dict) -> dict:
         "os_updates_years": {"apple": 6, "samsung": 4, "google": 7, "oneplus": 4, "nothing": 3, "motorola": 3}.get(brand.lower(), 2),
         "battery_mah": phone.get("battery_mah", 5000),
         "charging_w": phone.get("charging_w", 33),
-        "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50)),
-        "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16)),
+        "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50), phone.get("price_inr", 20000)),
+        "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16), phone.get("price_inr", 20000)),
         "display_refresh_hz": phone.get("display_refresh_hz", 90),
         "build_quality_score": calc_build(phone.get("price_inr", 20000)),
     }
