@@ -298,10 +298,10 @@ def push_to_sheet(client, rows):
     if ws.row_values(1) != SHEET_HEADERS:
         ws.update("A1", [SHEET_HEADERS])
     if ws.row_count > 1:
-        ws.batch_clear([f"A2:P{ws.row_count}"])
+        ws.batch_clear([f"A2:T{ws.row_count}"])
     values = [[row.get(h, "") for h in SHEET_HEADERS] for row in rows]
     if values:
-        ws.update(f"A2:P{1 + len(values)}", values)
+        ws.update(f"A2:T{1 + len(values)}", values)
         logger.info(f"Pushed {len(values)} rows to Google Sheet.")
 
 def main():
