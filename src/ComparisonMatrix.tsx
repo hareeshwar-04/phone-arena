@@ -1,10 +1,43 @@
+import { useState } from "react";
 import { X, Zap, Camera, Shield, Star, BookOpen } from "lucide-react";
 import type { PhoneWithRatings } from "./types";
 import { formatINR } from "./types";
 import { useVerdict } from "./hooks";
 
 export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRatings[]; onRemove: (id: string) => void }) {
-  const verdicts = useVerdict(phones);
+  const [variants, setVariants] = useState<Record<string, number>>({});
+
+  const virtualPhones = phones.map(p => {
+    const v = variants[p.id] || 0;
+    if (v === 0) return p;
+    
+    // Hardware upgrades: v=1 is +128GB, v=2 is +384GB
+    let addedPrice = v === 1 ? 4000 : 9000;
+    if (p.price_inr > 60000) addedPrice = v === 1 ? 10000 : 20000; // Premium brand tax
+    
+    let newStorage = p.storage_type;
+    
+    if (v === 1) {
+      newStorage = `${newStorage.split('/')[0].strip()} / 256GB`;
+    } else if (v === 2) {
+      // 512GB variants often force UFS 4.0 if the base was 3.1
+      if (newStorage.includes("3.1")) newStorage = "UFS 4.0 / 512GB";
+      else newStorage = `${newStorage.split('/')[0].strip()} / 512GB`;
+    }
+    
+    // VFM naturally decreases as you pay more for just storage
+    const vfmPenalty = (addedPrice / p.price_inr) * 10; 
+    const newVfm = Math.max(4.0, p.ratings.vfm - vfmPenalty);
+
+    return { 
+      ...p, 
+      price_inr: p.price_inr + addedPrice, 
+      storage_type: newStorage,
+      ratings: { ...p.ratings, vfm: newVfm }
+    };
+  });
+
+  const verdicts = useVerdict(virtualPhones);
 
   const rows: { label: string; key: string; getValue: (p: PhoneWithRatings) => number | string; fmt?: (v: any) => string; higherBetter?: boolean }[] = [
     { label: "Price", key: "price", getValue: (p) => p.price_inr, fmt: formatINR, higherBetter: false },
@@ -26,13 +59,13 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
     { label: "Value Score", key: "v", getValue: (p) => p.ratings.vfm, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
   ];
 
-  if (phones.length === 0) return null;
+  if (virtualPhones.length === 0) return null;
 
   // Calculate Winners
-  const gamingWinner = phones.reduce((prev, curr) => (prev.raw_cpu_score > curr.raw_cpu_score) ? prev : curr);
-  const cameraWinner = phones.reduce((prev, curr) => (prev.main_camera_score > curr.main_camera_score) ? prev : curr);
-  const durabilityWinner = phones.reduce((prev, curr) => (prev.os_updates_years + prev.build_quality_score > curr.os_updates_years + curr.build_quality_score) ? prev : curr);
-  const vfmWinner = phones.reduce((prev, curr) => (prev.ratings.vfm > curr.ratings.vfm) ? prev : curr);
+  const gamingWinner = virtualPhones.reduce((prev, curr) => (prev.raw_cpu_score > curr.raw_cpu_score) ? prev : curr);
+  const cameraWinner = virtualPhones.reduce((prev, curr) => (prev.main_camera_score > curr.main_camera_score) ? prev : curr);
+  const durabilityWinner = virtualPhones.reduce((prev, curr) => (prev.os_updates_years + prev.build_quality_score > curr.os_updates_years + curr.build_quality_score) ? prev : curr);
+  const vfmWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.vfm > curr.ratings.vfm) ? prev : curr);
 
   return (
     <div className="space-y-8">
@@ -59,10 +92,19 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50">
                 <th className="sticky left-0 z-10 bg-neutral-50 px-4 py-3 text-left text-xs font-bold text-neutral-500 uppercase tracking-wider w-40 min-w-[160px] border-r border-neutral-200">Specification</th>
-                {phones.map((p) => (
+                {virtualPhones.map((p) => (
                   <th key={p.id} className="px-4 py-4 text-center min-w-[160px]">
                     <div className="flex flex-col items-center gap-2">
                       <span className="text-sm font-bold text-neutral-900 tracking-tight">{p.name}</span>
+                      <select 
+                        value={variants[p.id] || 0}
+                        onChange={(e) => setVariants({...variants, [p.id]: Number(e.target.value)})}
+                        className="text-[10px] font-bold p-1 rounded border border-neutral-200 bg-neutral-50 text-neutral-700 outline-none w-full cursor-pointer hover:bg-neutral-100 transition-colors"
+                      >
+                        <option value={0}>Base Variant</option>
+                        <option value={1}>256GB Upgrade</option>
+                        <option value={2}>512GB Upgrade</option>
+                      </select>
                       <button onClick={() => onRemove(p.id)} className="text-neutral-400 hover:text-red-500 transition-colors bg-white border border-neutral-200 rounded px-2 py-1 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><X size={10} /> Remove</button>
                     </div>
                   </th>
@@ -71,15 +113,15 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
             </thead>
             <tbody>
               {rows.map((row) => {
-                const vals = phones.map((p) => row.getValue(p));
+                const vals = virtualPhones.map((p) => row.getValue(p));
                 const best = row.higherBetter ? Math.max(...vals) : Math.min(...vals);
                 
                 return (
                   <tr key={row.key} className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
                     <td className="sticky left-0 z-10 bg-white px-4 py-3 text-xs font-semibold text-neutral-600 border-r border-neutral-200">{row.label}</td>
-                    {phones.map((p, idx) => {
+                    {virtualPhones.map((p, idx) => {
                       const v = vals[idx];
-                      const isWin = v === best && phones.length > 1;
+                      const isWin = v === best && virtualPhones.length > 1;
                       const display = row.fmt ? row.fmt(v) : v.toString();
                       
                       return (
