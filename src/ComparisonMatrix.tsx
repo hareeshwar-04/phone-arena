@@ -18,11 +18,11 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
     let newStorage = p.storage_type;
     
     if (v === 1) {
-      newStorage = `${newStorage.split('/')[0].strip()} / 256GB`;
+      newStorage = `${newStorage.split('/')[0].trim()} / 256GB`;
     } else if (v === 2) {
       // 512GB variants often force UFS 4.0 if the base was 3.1
       if (newStorage.includes("3.1")) newStorage = "UFS 4.0 / 512GB";
-      else newStorage = `${newStorage.split('/')[0].strip()} / 512GB`;
+      else newStorage = `${newStorage.split('/')[0].trim()} / 512GB`;
     }
     
     // VFM naturally decreases as you pay more for just storage
@@ -114,7 +114,7 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
             <tbody>
               {rows.map((row) => {
                 const vals = virtualPhones.map((p) => row.getValue(p));
-                const best = row.higherBetter ? Math.max(...vals) : Math.min(...vals);
+                const best = row.higherBetter ? Math.max(...(vals as number[])) : Math.min(...(vals as number[]));
                 
                 return (
                   <tr key={row.key} className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
