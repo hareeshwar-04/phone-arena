@@ -193,6 +193,12 @@ def scrape_live_phones(limit=200) -> list[dict]:
             
         for card in cards:
             if len(phones) >= limit: break
+            
+            # Exclude unreleased/rumored phones
+            card_text = card.get_text(strip=True).lower()
+            if "upcoming" in card_text or "expected" in card_text or "rumored" in card_text:
+                continue
+                
             name_el = card.select_one("h2")
             if not name_el: continue
             name = name_el.get_text(strip=True)
