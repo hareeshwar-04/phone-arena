@@ -84,9 +84,25 @@ def norm_linear(raw, floor, ceil): return clamp(1.0 + ((raw - floor) / (ceil - f
 
 def calc_cpu(antutu): return norm_linear(antutu, ANTUTU_FLOOR, ANTUTU_CEILING)
 def calc_ui(bloat, skin): return clamp(1.0 + (1.0 - (min(bloat/30,1)*0.6 + (skin-1)/4*0.4)) * 9.0)
-def calc_cam_main(mp, price): 
-    # Fix: MP alone is a terrible proxy for quality. A 12MP iPhone beats a 108MP budget phone.
-    # We heavily weigh the price (which correlates perfectly with sensor size, ISP, and optics).
+DXOMARK_SCORES = {
+    "s26 ultra": 162, "s25 ultra": 158, "s24 ultra": 144,
+    "iphone 17 pro": 164, "iphone 16 pro": 158, "iphone 15 pro": 154,
+    "pixel 10 pro": 158, "pixel 9 pro": 153, "pixel 8 pro": 153,
+    "x200 pro": 160, "x100 pro": 150,
+    "magic6 pro": 158, "magic5 pro": 152,
+    "find x8 pro": 157, "find x7 ultra": 157,
+    "xiaomi 16 ultra": 160, "xiaomi 15 ultra": 155, "xiaomi 14 ultra": 149,
+    "oneplus 14": 148, "oneplus 13": 142, "oneplus 12": 135
+}
+
+def calc_cam_main(mp, price, phone_name=""):
+    name = phone_name.lower()
+    for key, dxo in DXOMARK_SCORES.items():
+        if key in name:
+            # Map DxOMark 130-165 to 7.0-10.0 scale
+            return norm_linear(dxo, 130, 165)
+            
+    # Fallback for unreviewed phones: Price proxy
     price_score = norm_linear(price, 10000, 120000)
     mp_score = norm_linear(mp, 12, 200)
     return clamp((price_score * 0.8) + (mp_score * 0.2))
@@ -223,7 +239,7 @@ def build_sheet_row(phone: dict) -> dict:
         "os_updates_years": {"apple": 6, "samsung": 4, "google": 7, "oneplus": 4, "nothing": 3, "motorola": 3}.get(brand.lower(), 2),
         "battery_mah": phone.get("battery_mah", 5000),
         "charging_w": phone.get("charging_w", 33),
-        "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50), phone.get("price_inr", 20000)),
+        "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50), phone.get("price_inr", 20000), phone.get("name", "")),
         "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16), phone.get("price_inr", 20000)),
         "display_refresh_hz": phone.get("display_refresh_hz", 90),
         "build_quality_score": calc_build(phone.get("price_inr", 20000)),
