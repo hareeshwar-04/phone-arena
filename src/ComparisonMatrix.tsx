@@ -91,9 +91,9 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
           <table className="w-full min-w-[500px]">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50">
-                <th className="sticky left-0 z-10 bg-neutral-50 px-4 py-3 text-left text-xs font-bold text-neutral-500 uppercase tracking-wider w-40 min-w-[160px] border-r border-neutral-200">Specification</th>
+                <th className="sticky left-0 z-10 bg-neutral-50 px-2 sm:px-4 py-3 text-left text-[10px] sm:text-xs font-bold text-neutral-500 uppercase tracking-wider w-24 min-w-[96px] sm:w-40 sm:min-w-[160px] border-r border-neutral-200">Specification</th>
                 {virtualPhones.map((p) => (
-                  <th key={p.id} className="px-4 py-4 text-center min-w-[160px]">
+                  <th key={p.id} className="px-2 sm:px-4 py-3 sm:py-4 text-center min-w-[120px] sm:min-w-[160px]">
                     <div className="flex flex-col items-center gap-2">
                       <span className="text-sm font-bold text-neutral-900 tracking-tight">{p.name}</span>
                       <select 
@@ -118,14 +118,14 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
                 
                 return (
                   <tr key={row.key} className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
-                    <td className="sticky left-0 z-10 bg-white px-4 py-3 text-xs font-semibold text-neutral-600 border-r border-neutral-200">{row.label}</td>
+                    <td className="sticky left-0 z-10 bg-white px-2 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-xs font-semibold text-neutral-600 border-r border-neutral-200">{row.label}</td>
                     {virtualPhones.map((p, idx) => {
                       const v = vals[idx];
                       const isWin = v === best && virtualPhones.length > 1;
                       const display = row.fmt ? row.fmt(v) : v.toString();
                       
                       return (
-                        <td key={p.id} className={`px-4 py-3 text-center text-sm font-medium transition-colors ${isWin ? "text-blue-700 bg-blue-50/50" : "text-neutral-700"}`}>
+                        <td key={p.id} className={`px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium transition-colors ${isWin ? "text-blue-700 bg-blue-50/50" : "text-neutral-700"}`}>
                           {display}
                         </td>
                       );
