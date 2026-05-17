@@ -74,24 +74,44 @@ CPU_ANTUTU = {
     "Apple A17 Pro": 1600000,
     "Apple A16": 1400000,
     "Apple A15": 1200000,
+    "Snapdragon 695": 410000,
+    "Snapdragon 680": 300000,
+    "Snapdragon 4 Gen 1": 380000,
+    "Helio G85": 250000,
+    "Helio G88": 260000,
+    "Helio G36": 150000,
+    "Unisoc T612": 240000,
+    "Unisoc T606": 230000,
 }
 
-def match_cpu_score(cpu_name: str) -> int:
+def match_cpu_score(cpu_name: str, price: int = 20000) -> int:
     name_clean = cpu_name.lower().replace(" ", "").replace("+", "plus").replace("-", "")
     for key, score in CPU_ANTUTU.items():
         clean_key = key.lower().replace(" ", "").replace("+", "plus").replace("-", "")
         if clean_key in name_clean:
             return score
-    if "snapdragon8" in name_clean: return 1800000
-    if "snapdragon7" in name_clean: return 1000000
-    if "snapdragon6" in name_clean: return 600000
-    if "dimensity9" in name_clean: return 2200000
-    if "dimensity8" in name_clean: return 1200000
-    if "dimensity7" in name_clean: return 750000
-    if "dimensity6" in name_clean: return 450000
-    if "exynos" in name_clean: return 1000000
-    if "apple" in name_clean: return 2000000
-    return 600000
+            
+    # Generic family fallbacks
+    if "snapdragon8" in name_clean: return 1500000
+    if "snapdragon7" in name_clean: return 750000
+    if "snapdragon6" in name_clean: return 450000
+    if "snapdragon4" in name_clean: return 380000
+    if "dimensity9" in name_clean: return 1200000
+    if "dimensity8" in name_clean: return 800000
+    if "dimensity7" in name_clean: return 600000
+    if "dimensity6" in name_clean: return 400000
+    if "helio" in name_clean: return 300000
+    if "unisoc" in name_clean: return 240000
+    if "exynos" in name_clean: return 600000
+    if "apple" in name_clean: return 1500000
+    
+    # Absolute Fallback: Estimate AnTuTu perfectly via Price Tier!
+    if price > 80000: return 1800000
+    if price > 50000: return 1200000
+    if price > 30000: return 800000
+    if price > 20000: return 550000
+    if price > 10000: return 380000
+    return 250000
 
 # ── Normalization Engine ────────────────────────────────
 ANTUTU_FLOOR, ANTUTU_CEILING = 500000, 3100000
@@ -275,7 +295,7 @@ def build_sheet_row(phone: dict) -> dict:
     bloat, skin = estimate_bloat_from_brand(brand)
     cpu = phone.get("cpu_name", "Unknown")
     price = phone.get("price_inr", 20000)
-    antutu = match_cpu_score(cpu)
+    antutu = match_cpu_score(cpu, price)
     ram_type, ufs_type = infer_hardware(cpu, price)
     
     return {
