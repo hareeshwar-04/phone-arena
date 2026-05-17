@@ -1,0 +1,32 @@
+name: 📊 Sheet Bot — Daily Data Sync
+
+on:
+  # Runs daily at midnight UTC
+  schedule:
+    - cron: '0 0 * * *'
+  # Manual trigger button in GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  update-sheet:
+    name: Fetch & Push Device Data
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Install dependencies
+        run: pip install gspread google-auth requests
+
+      - name: 🚀 Run Sheet Updater Bot
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python scripts/auto_update_sheet.py
