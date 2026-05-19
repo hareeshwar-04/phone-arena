@@ -6,6 +6,7 @@ import { usePhoneRatings, useWeightedSort, useShareBattle } from "./hooks";
 import { PhoneCard, SkeletonCard } from "./PhoneCard";
 import { FilterSidebar } from "./FilterSidebar";
 import { ComparisonMatrix } from "./ComparisonMatrix";
+import { PhoneDetail } from "./PhoneDetail";
 
 const SHEET_URL = "https://opensheet.elk.sh/1yhvi3qx40ijUz2RyQ7Vojfxx3ZGoyWcaUgTisWfOGmM/Sheet1";
 type ViewMode = "discover" | "compare";
@@ -33,7 +34,6 @@ function parseSheetRow(row: Record<string, string>): PhoneSpec {
     storage_type: row.storage_type || "UFS 2.2",
     ram_type: row.ram_type || "LPDDR4X",
     screen_type: row.screen_type || "IPS LCD",
-    product_url: row.product_url || "",
   };
 }
 
@@ -42,6 +42,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("discover");
+  const [selectedPhoneId, setSelectedPhoneId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("match");
   const [comparedIds, setComparedIds] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -224,7 +225,7 @@ export default function App() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {finalSortedPhones.map((phone) => (
-                    <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={weights} />
+                    <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={weights} onSelect={() => setSelectedPhoneId(phone.id)} />
                   ))}
                 </div>
               )}
@@ -240,6 +241,15 @@ export default function App() {
           </div>
         )}
       </main>
+      
+      {/* Phone Detail Modal */}
+      {selectedPhoneId && (
+        <PhoneDetail 
+          phone={phonesWithRatings.find(p => p.id === selectedPhoneId)!} 
+          onClose={() => setSelectedPhoneId(null)} 
+        />
+      )}
+
       {/* Tutorial Toast */}
       <TutorialToast />
     </div>

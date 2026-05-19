@@ -240,12 +240,6 @@ def scrape_live_phones(limit=200) -> list[dict]:
             price = parse_number(price_el.get_text(strip=True)) if price_el else 0
             if price < 5000: price = 15000
             
-            link_el = card.select_one("a")
-            product_url = ""
-            if link_el and link_el.get("href"):
-                href = link_el.get("href")
-                product_url = "https://www.smartprix.com" + href if href.startswith("/") else href
-            
             img_el = card.select_one("img.sm-img")
             img_url = img_el.get("src", "") if img_el else "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=600&fit=crop&q=80"
             if img_url and img_url.startswith("/"): img_url = "https://www.smartprix.com" + img_url
@@ -327,7 +321,6 @@ def scrape_live_phones(limit=200) -> list[dict]:
                 "screen_type": screen_type,
                 "main_camera_mp": main_mp,
                 "front_camera_mp": front_mp,
-                "product_url": product_url,
             })
         time.sleep(1.0)
         
@@ -367,7 +360,6 @@ def build_sheet_row(phone: dict) -> dict:
         "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16), price),
         "display_refresh_hz": phone.get("display_refresh_hz", 90),
         "build_quality_score": calc_build(price),
-        "product_url": phone.get("product_url", ""),
     }
 
 # ── Google Sheets Writer ─────────────────────────────────────────────────────
@@ -376,7 +368,7 @@ SHEET_HEADERS = [
     "cpu_name", "antutu_score", "storage_type", "ram_type", "screen_type",
     "raw_cpu_score", "raw_ui_score", "os_updates_years",
     "battery_mah", "charging_w", "main_camera_score", "front_camera_score",
-    "display_refresh_hz", "build_quality_score", "product_url"
+    "display_refresh_hz", "build_quality_score"
 ]
 
 def authenticate():
@@ -397,10 +389,10 @@ def push_to_sheet(client, rows):
     if ws.row_values(1) != SHEET_HEADERS:
         ws.update("A1", [SHEET_HEADERS])
     if ws.row_count > 1:
-        ws.batch_clear([f"A2:U{ws.row_count}"])
+        ws.batch_clear([f"A2:T{ws.row_count}"])
     values = [[row.get(h, "") for h in SHEET_HEADERS] for row in rows]
     if values:
-        ws.update(f"A2:U{1 + len(values)}", values)
+        ws.update(f"A2:T{1 + len(values)}", values)
         logger.info(f"Pushed {len(values)} rows to Google Sheet.")
 
 def main():

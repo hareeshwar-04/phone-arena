@@ -45,7 +45,7 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
     { label: "AnTuTu Score", key: "antutu", getValue: (p) => p.antutu_score, fmt: (v) => v.toLocaleString(), higherBetter: true },
     { label: "RAM Type", key: "ram", getValue: (p) => p.ram_type },
     { label: "Storage", key: "storage", getValue: (p) => p.storage_type },
-    { label: "Screen", key: "screen", getValue: (p) => p.screen_type },
+
     { label: "Refresh Rate", key: "ref", getValue: (p) => p.display_refresh_hz, fmt: (v) => `${v}Hz`, higherBetter: true },
     { label: "Battery", key: "bat", getValue: (p) => p.battery_mah, fmt: (v) => `${v} mAh`, higherBetter: true },
     { label: "Charging", key: "chg", getValue: (p) => p.charging_w, fmt: (v) => `${v}W`, higherBetter: true },

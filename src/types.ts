@@ -24,7 +24,6 @@ export interface PhoneSpec {
   storage_type: string;
   ram_type: string;
   screen_type: string;
-  product_url?: string;
 }
 
 /** Computed persona ratings derived from the formula engine */
@@ -72,7 +71,6 @@ export const mockPhones: PhoneSpec[] = [
     storage_type: "UFS 4.0",
     ram_type: "LPDDR5X",
     screen_type: "AMOLED",
-    product_url: "https://www.smartprix.com/mobiles/oneplus-brand"
   },
   {
     id: "poco-x8-pro-max",
@@ -94,8 +92,7 @@ export const mockPhones: PhoneSpec[] = [
     antutu_score: 1600000,
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
-    screen_type: "AMOLED",
-    product_url: "https://www.smartprix.com/mobiles/poco-brand"
+    screen_type: "AMOLED"
   },
   {
     id: "vivo-t5-pro",
@@ -117,8 +114,7 @@ export const mockPhones: PhoneSpec[] = [
     antutu_score: 1100000,
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
-    screen_type: "AMOLED",
-    product_url: "https://www.smartprix.com/mobiles/vivo-brand"
+    screen_type: "AMOLED"
   },
   {
     id: "iqoo-z11",
@@ -140,8 +136,7 @@ export const mockPhones: PhoneSpec[] = [
     antutu_score: 1550000,
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
-    screen_type: "AMOLED",
-    product_url: "https://www.smartprix.com/mobiles/iqoo-brand"
+    screen_type: "AMOLED"
   },
 ];
 

@@ -24,16 +24,17 @@ export function SkeletonCard() {
   );
 }
 
-export function PhoneCard({ phone, isCompared, onToggle, weights }: {
+export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect }: {
   phone: PhoneWithRatings; isCompared: boolean;
   onToggle: (id: string) => void; weights: WeightConfig;
+  onSelect?: () => void;
 }) {
   const total = weights.gaming + weights.durability + weights.camera || 1;
   const customScore = Math.round(((phone.ratings.gaming * weights.gaming + phone.ratings.durability * weights.durability + phone.ratings.creator * weights.camera) / total) * 10) / 10;
   const hasBloat = phone.raw_ui_score < 6.0;
 
   return (
-    <div className={`relative group rounded border bg-white transition-shadow duration-200 hover:shadow-md animate-fade-in-up ${isCompared ? "border-blue-500 shadow-sm" : "border-neutral-200"}`}>
+    <div className={`relative group rounded border bg-white transition-shadow duration-200 hover:shadow-md animate-fade-in-up cursor-pointer ${isCompared ? "border-blue-500 shadow-sm" : "border-neutral-200"}`} onClick={onSelect}>
       {hasBloat && (
         <div className="absolute top-3 right-3 z-10 group/bloat cursor-help">
           <div className="flex items-center gap-1 rounded bg-red-50 border border-red-200 px-2 py-1 text-[10px] uppercase font-bold text-red-600">
@@ -68,7 +69,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights }: {
             <span>{phone.storage_type}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Monitor size={13} className="text-neutral-400" /> <span>{phone.screen_type} ({phone.display_refresh_hz}Hz)</span>
+            <Monitor size={13} className="text-neutral-400" /> <span>{phone.display_refresh_hz}Hz Display</span>
             <span className="text-neutral-300">•</span>
             <Battery size={13} className="text-neutral-400" /> <span>{phone.battery_mah}mAh</span>
           </div>
@@ -94,14 +95,9 @@ export function PhoneCard({ phone, isCompared, onToggle, weights }: {
         </div>
         
         <div className="flex items-center gap-2">
-          <button onClick={() => onToggle(phone.id)} className={`flex-1 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${isCompared ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
+          <button onClick={(e) => { e.stopPropagation(); onToggle(phone.id); }} className={`w-full py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${isCompared ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
             {isCompared ? <><X size={14} /> Remove</> : <><Plus size={14} /> Compare</>}
           </button>
-          {phone.product_url && (
-            <a href={phone.product_url} target="_blank" rel="noopener noreferrer" className="p-2.5 rounded border border-neutral-200 bg-neutral-50 text-neutral-500 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="View Source & Price">
-              <ExternalLink size={16} />
-            </a>
-          )}
         </div>
       </div>
     </div>
