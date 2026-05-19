@@ -202,3 +202,83 @@ export const formatINR = (value: number): string =>
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(value);
+
+export interface UserPhoneSpecs {
+  name: string;
+  antutu_score: number;
+  main_camera_score: number;
+  battery_mah: number;
+  os_updates_years: number;
+}
+
+export interface UserPhonePredictConfig {
+  brand: string;
+  antutuScore: number;
+  batteryMah: number;
+}
+
+export function predictUserPhoneSpecs(config: UserPhonePredictConfig): UserPhoneSpecs {
+  const { brand, antutuScore, batteryMah } = config;
+  const brandLower = brand.toLowerCase();
+
+  // Estimate the phone's price tier and age from AnTuTu score
+  // Higher AnTuTu → newer and more expensive phone
+  let estimatedPrice = 15000;
+  let estimatedAge = 3; // years old
+
+  if (antutuScore >= 2500000) { estimatedPrice = 100000; estimatedAge = 0; }
+  else if (antutuScore >= 2000000) { estimatedPrice = 80000; estimatedAge = 0; }
+  else if (antutuScore >= 1500000) { estimatedPrice = 60000; estimatedAge = 1; }
+  else if (antutuScore >= 1200000) { estimatedPrice = 45000; estimatedAge = 1; }
+  else if (antutuScore >= 1000000) { estimatedPrice = 35000; estimatedAge = 2; }
+  else if (antutuScore >= 800000) { estimatedPrice = 30000; estimatedAge = 2; }
+  else if (antutuScore >= 600000) { estimatedPrice = 25000; estimatedAge = 2; }
+  else if (antutuScore >= 450000) { estimatedPrice = 18000; estimatedAge = 3; }
+  else if (antutuScore >= 300000) { estimatedPrice = 12000; estimatedAge = 3; }
+  else { estimatedPrice = 8000; estimatedAge = 4; }
+
+  // 1. Camera Prediction (Brand reputation × price tier)
+  let baseCamera = 5.0;
+  if (estimatedPrice < 10000) baseCamera = 3.5;
+  else if (estimatedPrice < 20000) baseCamera = 5.2;
+  else if (estimatedPrice < 35000) baseCamera = 6.5;
+  else if (estimatedPrice < 55000) baseCamera = 7.5;
+  else if (estimatedPrice < 85000) baseCamera = 8.3;
+  else baseCamera = 9.1;
+
+  let brandCameraBonus = 0;
+  if (brandLower === "apple" || brandLower === "google") brandCameraBonus = 0.6;
+  else if (brandLower === "samsung") brandCameraBonus = 0.4;
+  else if (brandLower === "vivo") brandCameraBonus = 0.3;
+  else if (brandLower === "oneplus" || brandLower === "oppo" || brandLower === "xiaomi") brandCameraBonus = 0.1;
+  else if (["realme", "poco", "motorola", "nothing", "iqoo"].includes(brandLower)) brandCameraBonus = -0.2;
+  else brandCameraBonus = -0.4;
+
+  // Older cameras rate lower by 2026 standards (sensor aging + software gap)
+  const cameraScore = Math.max(1.0, Math.min(10.0, baseCamera + brandCameraBonus - (estimatedAge * 0.35)));
+
+  // 2. Battery — use the user-selected mAh, apply ~7%/yr degradation
+  const degradedBattery = Math.max(1000, Math.round(batteryMah * (1 - 0.07 * estimatedAge)));
+
+  // 3. OS Updates Longevity (Remaining support years)
+  let baseOsYears = 2;
+  if (brandLower === "apple") baseOsYears = 6;
+  else if (brandLower === "google") baseOsYears = estimatedPrice >= 60000 ? 7 : 5;
+  else if (brandLower === "samsung") baseOsYears = estimatedPrice >= 60000 ? 7 : 4;
+  else if (brandLower === "oneplus") baseOsYears = 4;
+  else if (brandLower === "nothing") baseOsYears = 3;
+
+  const osUpdatesRemaining = Math.max(0, baseOsYears - estimatedAge);
+
+  const estimatedYear = 2026 - estimatedAge;
+
+  return {
+    name: `${brand} (~${estimatedYear}, ${(antutuScore / 1000).toFixed(0)}K)`,
+    antutu_score: antutuScore,
+    main_camera_score: cameraScore,
+    battery_mah: degradedBattery,
+    os_updates_years: osUpdatesRemaining
+  };
+}
+
+

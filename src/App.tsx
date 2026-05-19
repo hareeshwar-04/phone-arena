@@ -1,12 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon, Palette, Zap, Camera, Scale, Gamepad2, BatteryCharging, Coins } from "lucide-react";
-import type { PhoneSpec, WeightConfig, FilterConfig } from "./types";
+import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon, Palette, Zap, Camera, Scale, Gamepad2, BatteryCharging, Coins, ExternalLink } from "lucide-react";
+import type { PhoneSpec, WeightConfig, FilterConfig, UserPhoneSpecs } from "./types";
 import { mockPhones, DEFAULT_FILTERS } from "./types";
 import { usePhoneRatings, useWeightedSort, useShareBattle, getRamStorage } from "./hooks";
 import { PhoneCard, SkeletonCard } from "./PhoneCard";
 import { FilterSidebar } from "./FilterSidebar";
 import { ComparisonMatrix } from "./ComparisonMatrix";
 import { PhoneDetail } from "./PhoneDetail";
+import { PhoneImage } from "./PhoneImage";
 import { OnboardingWizard } from "./OnboardingWizard";
 import { SpecGuideModal } from "./SpecGuideModal";
 import { LegalModal } from "./LegalModal";
@@ -340,6 +341,17 @@ function parseSheetRow(row: Record<string, string>): PhoneSpec {
 
 export default function App() {
   const [rawPhones, setRawPhones] = useState<PhoneSpec[]>(mockPhones);
+  const [userPhone, setUserPhone] = useState<UserPhoneSpecs | null>(() => {
+    const saved = localStorage.getItem("pa_user_phone");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("discover");
@@ -361,6 +373,8 @@ export default function App() {
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(15);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -418,6 +432,10 @@ export default function App() {
       return { ...DEFAULT_FILTERS };
     }
   });
+
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [filters, searchQuery, sortBy]);
 
   // Persist filters
   useEffect(() => { localStorage.setItem("pa_filters_v2", JSON.stringify(filters)); }, [filters]);
@@ -579,8 +597,12 @@ export default function App() {
     });
   }, []);
 
-  const handleWizardComplete = useCallback((wizardFilters: FilterConfig) => {
+  const handleWizardComplete = useCallback((wizardFilters: FilterConfig, userPhoneSpecs: UserPhoneSpecs | null) => {
     setFilters(wizardFilters);
+    if (userPhoneSpecs) {
+      setUserPhone(userPhoneSpecs);
+      localStorage.setItem("pa_user_phone", JSON.stringify(userPhoneSpecs));
+    }
     setShowWizard(false);
     localStorage.setItem("pa_wizard_done", "true");
   }, []);
@@ -620,7 +642,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans antialiased selection:bg-blue-500/20 selection:text-blue-900">
       {/* Onboarding Wizard */}
-      {showWizard && !loading && <OnboardingWizard onComplete={handleWizardComplete} onSkip={handleWizardSkip} />}
+      {showWizard && !loading && <OnboardingWizard phones={rawPhones} onComplete={handleWizardComplete} onSkip={handleWizardSkip} />}
 
       {/* Header */}
       <header className={`sticky top-0 z-50 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 transition-transform duration-300 ${
@@ -665,29 +687,29 @@ export default function App() {
             </div>
 
             {/* View Tabs */}
-            <div className="hidden sm:flex items-center gap-1.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-1 shadow-sm border border-neutral-200/40 dark:border-neutral-750/30">
+            <div className="hidden sm:flex items-center gap-2 rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-1 shadow-sm border border-neutral-200/40 dark:border-neutral-750/30">
               <button 
-                onClick={() => setView("discover")} 
-                className={`px-5.5 py-2.5 rounded-xl text-[13px] font-black uppercase tracking-wider transition-all duration-200 ${
+                onClick={() => { setView("discover"); setSelectedPhoneId(null); }} 
+                className={`px-7 py-3 rounded-xl text-[13px] font-black uppercase tracking-wider transition-all duration-200 ${
                   view === "discover" 
                     ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-md shadow-neutral-200/40 dark:shadow-none scale-[1.01]" 
                     : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:scale-[1.01]"
                 }`}
               >
-                <span className="flex items-center gap-2"><Search size={15} /> Browse</span>
+                <span className="flex items-center gap-2.5"><Search size={15} /> Browse</span>
               </button>
               <div className="relative">
                 <button 
-                  onClick={() => setView("compare")} 
-                  className={`relative px-5.5 py-2.5 rounded-xl text-[13px] font-black uppercase tracking-wider transition-all duration-200 ${
+                  onClick={() => { setView("compare"); setSelectedPhoneId(null); }} 
+                  className={`relative px-7 py-3 rounded-xl text-[13px] font-black uppercase tracking-wider transition-all duration-200 ${
                     view === "compare" 
                       ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-md shadow-neutral-200/40 dark:shadow-none scale-[1.01]" 
                       : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:scale-[1.01]"
                   } ${highlightCompare ? "animate-wiggle bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-lg" : ""}`}
                 >
-                  <span className="flex items-center gap-2"><Layers size={15} /> Compare</span>
+                  <span className="flex items-center gap-2.5"><Layers size={15} /> Compare</span>
                   {comparedIds.length > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-5.5 h-5.5 rounded-full bg-blue-600 text-[10px] font-black text-white flex items-center justify-center border-2 border-white dark:border-neutral-850 shadow-md">
+                    <span className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-blue-600 text-[10px] font-black text-white flex items-center justify-center border-2 border-white dark:border-neutral-850 shadow-md">
                       {comparedIds.length}
                     </span>
                   )}
@@ -745,29 +767,29 @@ export default function App() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/40 dark:border-neutral-750/30">
+              <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl border border-neutral-200/40 dark:border-neutral-750/30 gap-1">
                 <button 
-                  onClick={() => setView("discover")} 
-                  className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                  onClick={() => { setView("discover"); setSelectedPhoneId(null); }} 
+                  className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 ${
                     view === "discover" 
-                      ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm font-black" 
-                      : "text-neutral-500 dark:text-neutral-400 font-bold"
+                      ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-md font-black" 
+                      : "text-neutral-500 dark:text-neutral-400 font-bold hover:text-neutral-800 dark:hover:text-neutral-200"
                   }`}
                 >
                   Browse
                 </button>
                 <div className="relative">
                   <button 
-                    onClick={() => setView("compare")} 
-                    className={`relative px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                    onClick={() => { setView("compare"); setSelectedPhoneId(null); }} 
+                    className={`relative px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 ${
                       view === "compare" 
-                        ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm font-black" 
-                        : "text-neutral-500 dark:text-neutral-400 font-bold"
+                        ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-md font-black" 
+                        : "text-neutral-500 dark:text-neutral-400 font-bold hover:text-neutral-800 dark:hover:text-neutral-200"
                     } ${highlightCompare ? "animate-wiggle bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : ""}`}
                   >
                     Compare
                     {comparedIds.length > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-[8px] font-black text-white flex items-center justify-center border border-white dark:border-neutral-850 shadow-sm">
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-blue-600 text-[9px] font-black text-white flex items-center justify-center border-2 border-white dark:border-neutral-850 shadow-md">
                         {comparedIds.length}
                       </span>
                     )}
@@ -795,32 +817,6 @@ export default function App() {
             <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
               <SlidersHorizontal size={20} />
             </button>
-            {/* Spec Guide */}
-            <div className="relative">
-              <button 
-                onClick={() => { setShowSpecGuide(true); setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_v3", "true"); }} 
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors" 
-                title="Learn what smartphone specs mean"
-              >
-                <BookOpen size={14} className="text-neutral-500" /> Spec Guide
-              </button>
-              {showTooltip && !showWizard && (
-                <div className="absolute top-full mt-2.5 right-0 w-64 bg-neutral-900 text-white rounded-xl p-3 shadow-xl z-50 border border-neutral-800 animate-float-subtle">
-                  <div className="absolute bottom-full right-6 w-3 h-3 bg-neutral-900 rotate-45 border-l border-t border-neutral-800 transform translate-y-1.5" />
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-[11px] font-semibold leading-relaxed">
-                      New to tech? We highly recommend reading this spec guide first! 📖
-                    </p>
-                    <button 
-                      onClick={() => { setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_v3", "true"); }} 
-                      className="text-neutral-400 hover:text-white flex-shrink-0 mt-0.5"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
             {/* Re-open wizard */}
             <div className="relative">
               <button 
@@ -888,7 +884,7 @@ export default function App() {
                               : "bg-neutral-50 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-700/55"
                           }`}
                         >
-                          <Moon size={12} /> Dark
+                          <Moon size={12} /> Dark <span className="text-[7px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold uppercase scale-90">Beta</span>
                         </button>
                       </div>
                     </div>
@@ -919,7 +915,7 @@ export default function App() {
                               : "bg-transparent text-neutral-600 dark:text-neutral-400 border-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
                           }`}
                         >
-                          <span className="flex items-center gap-2">🥷 Stealth Mode</span>
+                          <span className="flex items-center gap-2">🥷 Stealth Mode <span className="text-[7px] px-1 py-0.2 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-extrabold uppercase scale-90">Beta</span></span>
                           {styleMode === "stealth" && <span className="w-1.5 h-1.5 rounded-full bg-neutral-950 dark:bg-neutral-100" />}
                         </button>
                       </div>
@@ -932,19 +928,39 @@ export default function App() {
         </div>
         {/* Mobile search */}
         <div className="sm:hidden px-4 pb-3">
-          <div className="flex items-center bg-neutral-100 rounded-lg border border-neutral-200 px-3 py-2 gap-2">
-            <Search size={14} className="text-neutral-400" />
-            <input type="text" placeholder="Search phones..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent text-sm text-neutral-700 outline-none w-full placeholder:text-neutral-400" />
-            {searchQuery && <button onClick={() => setSearchQuery("")} className="text-neutral-400 hover:text-neutral-600"><X size={14} /></button>}
+          <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-750 px-3 py-2 gap-2 text-neutral-900 dark:text-white">
+            <Search size={14} className="text-neutral-400 dark:text-neutral-500" />
+            <input 
+              type="text" 
+              placeholder="Search phones..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              className="bg-transparent text-sm text-neutral-750 dark:text-neutral-200 outline-none w-full placeholder:text-neutral-450 dark:placeholder:text-neutral-500" 
+            />
+            {searchQuery && <button onClick={() => setSearchQuery("")} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"><X size={14} /></button>}
           </div>
         </div>
       </header>
 
       {/* Disclaimer */}
-      <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2.5 text-center text-xs font-medium text-yellow-800 flex items-center justify-center gap-2 shadow-sm relative z-40">
-        <span className="font-bold uppercase tracking-wider text-[10px] bg-yellow-200 px-1.5 py-0.5 rounded text-yellow-900">Disclaimer</span>
-        <span>There might be a few inaccuracies in the specs. Please cross-check before making any final decisions.</span>
-      </div>
+      {showDisclaimer && (
+        <div className="bg-yellow-50 dark:bg-yellow-950/20 border-b border-yellow-200 dark:border-yellow-900/35 px-4 py-2 text-center text-xs font-medium text-yellow-800 dark:text-yellow-400 relative z-40">
+          <div className="flex items-center justify-center gap-2">
+            <span className="font-bold uppercase tracking-wider text-[10px] bg-yellow-200 dark:bg-yellow-900/40 px-1.5 py-0.5 rounded text-yellow-900 dark:text-yellow-350">Disclaimer</span>
+            <span>There might be a few inaccuracies in the specs. Please cross-check before making any final decisions.</span>
+            <button 
+              onClick={() => setShowDisclaimer(false)}
+              className="ml-2 text-yellow-600 dark:text-yellow-500 hover:text-yellow-900 dark:hover:text-yellow-300 transition-colors flex-shrink-0"
+              title="Dismiss"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <p className="text-[10px] text-yellow-700/70 dark:text-yellow-500/60 mt-0.5 font-semibold">
+            Predicted launch dates may vary by 0–1 quarter from actual release dates.
+          </p>
+        </div>
+      )}
 
       {fetchError && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
@@ -967,6 +983,7 @@ export default function App() {
             setView("compare");
             setSelectedPhoneId(null);
           }}
+          userPhone={userPhone}
         />
       ) : (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -980,7 +997,30 @@ export default function App() {
                 <button onClick={() => setView("discover")} className="px-6 py-2.5 rounded bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors">Browse Database</button>
               </div>
             ) : (
-              <ComparisonMatrix phones={comparedPhones} onRemove={toggleCompare} weights={filters.weights} />
+              <>
+                <div className="flex items-center justify-end gap-2 mb-4">
+                  <button
+                    onClick={() => {
+                      const text = comparedPhones.map(p => 
+                        `${p.name} — Perf: ${p.ratings.performance.toFixed(1)} | Cam: ${p.ratings.camera.toFixed(1)} | VFM: ${p.ratings.vfm.toFixed(1)} | ₹${(p.price_inr/1000).toFixed(0)}K`
+                      ).join("\n");
+                      const shareText = `Phone Comparison via PhoneArena India:\n\n${text}\n\nCompare more at ${window.location.origin}`;
+                      
+                      if (navigator.share) {
+                        navigator.share({ title: "Phone Comparison", text: shareText }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(shareText).then(() => {
+                          alert("Comparison copied to clipboard!");
+                        });
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                  >
+                    <ExternalLink size={13} /> Share Comparison
+                  </button>
+                </div>
+                <ComparisonMatrix phones={comparedPhones} onRemove={toggleCompare} weights={filters.weights} />
+              </>
             )}
           </div>
         )}
@@ -989,7 +1029,7 @@ export default function App() {
           <div className="flex gap-8">
             {/* Sidebar — Desktop */}
             <aside className="hidden lg:block w-64 flex-shrink-0">
-              <div className="sticky top-24 bg-white border border-neutral-200 rounded p-5 shadow-sm max-h-[calc(100vh-7rem)] overflow-y-auto hide-scrollbar">
+              <div className="sticky top-24 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm max-h-[calc(100vh-7rem)] overflow-y-auto hide-scrollbar">
                 <FilterSidebar
                   brands={brands} filters={filters} onFilterChange={setFilters}
                   availableScreenTypes={availableScreenTypes} availableRamTypes={availableRamTypes}
@@ -997,6 +1037,7 @@ export default function App() {
                   availableStorageCapacities={availableStorageCapacities} availableRamCapacities={availableRamCapacities}
                   availableProcessorTiers={availableProcessorTiers}
                   phoneCount={finalSortedPhones.length}
+                  userPhone={userPhone} setUserPhone={setUserPhone} phones={rawPhones}
                 />
               </div>
             </aside>
@@ -1004,17 +1045,29 @@ export default function App() {
             {/* Mobile Filter Drawer */}
             {mobileFilterOpen && (
               <div className="fixed inset-0 z-50 lg:hidden">
-                <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setMobileFilterOpen(false)} />
-                <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] bg-white rounded-t-xl p-6 overflow-y-auto">
-                  <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6" />
-                  <FilterSidebar
-                    brands={brands} filters={filters} onFilterChange={setFilters}
-                    availableScreenTypes={availableScreenTypes} availableRamTypes={availableRamTypes}
-                    availableStorageTypes={availableStorageTypes} 
-                    availableStorageCapacities={availableStorageCapacities} availableRamCapacities={availableRamCapacities}
-                    availableProcessorTiers={availableProcessorTiers}
-                    phoneCount={finalSortedPhones.length}
-                  />
+                <div className="absolute inset-0 bg-neutral-950/60 backdrop-blur-[4px]" onClick={() => setMobileFilterOpen(false)} />
+                <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] bg-white dark:bg-neutral-900 rounded-t-3xl p-6 overflow-y-auto border-t border-neutral-200/30 dark:border-neutral-800 shadow-2xl flex flex-col transition-all duration-300">
+                  <div className="flex items-center justify-between mb-4 flex-shrink-0 relative">
+                    <div className="w-12 h-1 bg-neutral-250 dark:bg-neutral-700 rounded-full mx-auto" />
+                    <button 
+                      onClick={() => setMobileFilterOpen(false)}
+                      className="absolute -top-1 right-0 p-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-750 text-neutral-500 hover:text-neutral-700 dark:text-neutral-450 dark:hover:text-neutral-200 transition-colors"
+                      title="Close Filters"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="flex-1 mt-2">
+                    <FilterSidebar
+                      brands={brands} filters={filters} onFilterChange={setFilters}
+                      availableScreenTypes={availableScreenTypes} availableRamTypes={availableRamTypes}
+                      availableStorageTypes={availableStorageTypes} 
+                      availableStorageCapacities={availableStorageCapacities} availableRamCapacities={availableRamCapacities}
+                      availableProcessorTiers={availableProcessorTiers}
+                      phoneCount={finalSortedPhones.length}
+                      userPhone={userPhone} setUserPhone={setUserPhone} phones={rawPhones}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -1174,15 +1227,27 @@ export default function App() {
               </div>
 
               {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                   <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {finalSortedPhones.map((phone) => (
-                    <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={filters.weights} onSelect={() => setSelectedPhoneId(phone.id)} badges={badges[phone.id]} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                    {finalSortedPhones.slice(0, visibleCount).map((phone) => (
+                      <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={filters.weights} onSelect={() => setSelectedPhoneId(phone.id)} badges={badges[phone.id]} userPhone={userPhone} />
+                    ))}
+                  </div>
+                  {finalSortedPhones.length > visibleCount && (
+                    <div className="flex justify-center mt-8 mb-4">
+                      <button 
+                        onClick={() => setVisibleCount(prev => prev + 15)} 
+                        className="px-6 py-3 rounded-xl bg-blue-600 dark:bg-blue-700 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider hover:bg-blue-700 dark:hover:bg-blue-600 transition-all shadow-md active:scale-95 border border-transparent hover:border-blue-500/20"
+                      >
+                        Load More Devices ({finalSortedPhones.length - visibleCount} remaining)
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
               {!loading && finalSortedPhones.length === 0 && (

@@ -468,10 +468,41 @@ export function getProsAndCons(p: PhoneWithRatings, allPhones?: PhoneWithRatings
     }
   }
 
-  // --- Dynamic Pros (Relative to Segment) ---
-  if (p.ratings.performance > avgPerformance + 0.3) {
+  // --- Meme-tier Perfect Score Highlights (9.5+) ---
+  if (p.ratings.performance >= 9.8) {
+    pros.push(`This chip woke up and chose violence. ${p.ratings.performance.toFixed(1)}/10 performance — apps don't load, they simply appear.`);
+  } else if (p.ratings.performance >= 9.5) {
+    pros.push(`Performance is absolutely unhinged — ${p.ratings.performance.toFixed(1)}/10. Other phones in this range are crying in the corner.`);
+  }
+
+  if (p.ratings.camera >= 9.8) {
+    pros.push(`The camera on this thing is genuinely unfair. ${p.ratings.camera.toFixed(1)}/10 — point at literally anything and it looks professional.`);
+  } else if (p.ratings.camera >= 9.5) {
+    pros.push(`Camera woke up and chose to end careers — ${p.ratings.camera.toFixed(1)}/10. DSLR owners are nervous.`);
+  }
+
+  if (p.ratings.reliability >= 9.8) {
+    pros.push(`Built different. Reliability at ${p.ratings.reliability.toFixed(1)}/10 — this phone will outlive your relationship.`);
+  } else if (p.ratings.reliability >= 9.5) {
+    pros.push(`Reliability is borderline ridiculous at ${p.ratings.reliability.toFixed(1)}/10 — throw it, drop it, it doesn't care.`);
+  }
+
+  if (p.ratings.os >= 9.8) {
+    pros.push(`OS support at ${p.ratings.os.toFixed(1)}/10 — this phone will still be getting updates when you're buying your next one.`);
+  } else if (p.ratings.os >= 9.5) {
+    pros.push(`Software longevity is ELITE at ${p.ratings.os.toFixed(1)}/10. Your grandchildren might inherit this update cycle.`);
+  }
+
+  if (p.ratings.vfm >= 9.8) {
+    pros.push(`VFM at ${p.ratings.vfm.toFixed(1)}/10 — at this point you're not buying a phone, you're committing highway robbery.`);
+  } else if (p.ratings.vfm >= 9.5) {
+    pros.push(`Value for Money is straight up disrespectful at ${p.ratings.vfm.toFixed(1)}/10. The competition should be embarrassed.`);
+  }
+
+  // --- Dynamic Pros (Relative to Segment) --- skip if meme already covered it
+  if (p.ratings.performance < 9.5 && p.ratings.performance > avgPerformance + 0.3) {
     pros.push(`Excellent performance (${p.ratings.performance.toFixed(1)}/10), beating the segment average of ${avgPerformance.toFixed(1)}/10.`);
-  } else if (p.ratings.performance >= 8.5) {
+  } else if (p.ratings.performance < 9.5 && p.ratings.performance >= 8.5) {
     pros.push(`Flagship processing speeds with a massive AnTuTu output.`);
   }
 
@@ -483,7 +514,7 @@ export function getProsAndCons(p: PhoneWithRatings, allPhones?: PhoneWithRatings
     pros.push(`Super-smooth ${p.display_refresh_hz}Hz refresh rate scrolling.`);
   }
 
-  if (p.ratings.camera > avgCamera + 0.3) {
+  if (p.ratings.camera < 9.5 && p.ratings.camera > avgCamera + 0.3) {
     pros.push(`Superior camera quality (${p.ratings.camera.toFixed(1)}/10) compared to the segment average of ${avgCamera.toFixed(1)}/10.`);
   }
 
@@ -497,7 +528,7 @@ export function getProsAndCons(p: PhoneWithRatings, allPhones?: PhoneWithRatings
     pros.push(`Blazing fast ${p.charging_w}W charging juice-up times.`);
   }
 
-  if (p.os_updates_years >= 5) {
+  if (p.os_updates_years >= 5 && p.ratings.os < 9.5) {
     pros.push(`Strong support lifecycle with ${p.os_updates_years} promised OS upgrades.`);
   }
 
@@ -511,8 +542,10 @@ export function getProsAndCons(p: PhoneWithRatings, allPhones?: PhoneWithRatings
     severeCons.push("Severely limited 128GB storage: Under 2026 usage standards with heavy OS bloat and app updates, this will fill up extremely fast.");
   }
 
-  // Camera Con
-  if (p.ratings.camera < avgCamera + 0.2) {
+  // Camera Con (skip for Apple, Google, Samsung — their cameras are consistently top-tier)
+  const camConBrand = p.brand.toLowerCase();
+  const skipCameraCon = camConBrand === "apple" || camConBrand === "google" || camConBrand === "samsung";
+  if (!skipCameraCon && p.ratings.camera < avgCamera + 0.2) {
     if (p.ratings.camera < avgCamera - 0.3) {
       const diff = (avgCamera - p.ratings.camera).toFixed(1);
       severeCons.push(`Below-Average Camera: Scores ${p.ratings.camera.toFixed(1)}/10, lagging ${diff} pts behind the segment standard (${avgCamera.toFixed(1)}/10).`);
@@ -534,8 +567,8 @@ export function getProsAndCons(p: PhoneWithRatings, allPhones?: PhoneWithRatings
     severeCons.push(`Below-Average Reliability: Scores ${p.ratings.reliability.toFixed(1)}/10, falling ${diff} pts behind segment expectations (${avgReliability.toFixed(1)}/10).`);
   }
 
-  // OS Con (strictly below average)
-  if (p.ratings.os < avgOS - 0.3) {
+  // OS Con (only if significantly below segment average — 1.5 pts)
+  if (p.ratings.os < avgOS - 1.5) {
     const diff = (avgOS - p.ratings.os).toFixed(1);
     severeCons.push(`Below-Average Software: OS rating is ${p.ratings.os.toFixed(1)}/10, lagging ${diff} pts behind the segment standard (${avgOS.toFixed(1)}/10).`);
   }

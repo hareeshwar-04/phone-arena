@@ -490,18 +490,36 @@ export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneW
                 source: "OS Curation Matrix",
                 key: (p: PhoneWithRatings) => p.ratings.os,
                 getLabel: (p: PhoneWithRatings) => {
-                  const isApple = p.brand.toLowerCase() === "apple";
-                  const n = p.name.toLowerCase();
-                  let osVer = isApple ? "iOS 19" : "Android 15";
-                  if (n.includes("s24") || n.includes("pixel 8") || n.includes("12")) {
-                    osVer = isApple ? "iOS 18" : "Android 14";
-                  } else if (n.includes("s25") || n.includes("pixel 9") || n.includes("13") || n.includes("15")) {
-                    osVer = isApple ? "iOS 19" : "Android 15";
-                  } else if (n.includes("s26") || n.includes("pixel 10") || n.includes("14")) {
-                    osVer = isApple ? "iOS 20" : "Android 16";
-                  }
+                  const brandLower = p.brand.toLowerCase();
+                  
+                  // Brand OS skin names (hardcoded, 2026 latest)
+                  const osNameMap: Record<string, string> = {
+                    "samsung": "One UI",
+                    "apple": "iOS",
+                    "oneplus": "OxygenOS",
+                    "xiaomi": "HyperOS",
+                    "redmi": "HyperOS",
+                    "poco": "HyperOS",
+                    "realme": "Realme UI",
+                    "oppo": "ColorOS",
+                    "vivo": "Funtouch OS",
+                    "iqoo": "Funtouch OS",
+                    "google": "Stock Android",
+                    "motorola": "Near-Stock Android",
+                    "nothing": "Nothing OS",
+                    "honor": "MagicOS",
+                    "asus": "ZenUI",
+                    "sony": "Near-Stock Android",
+                    "nokia": "Stock Android",
+                    "tecno": "HiOS",
+                    "infinix": "XOS",
+                    "lava": "Stock Android",
+                  };
+
+                  const osSkin = osNameMap[brandLower] || "Custom Android";
+                  
                   return {
-                    bold: osVer,
+                    bold: osSkin,
                     normal: p.name
                   };
                 }

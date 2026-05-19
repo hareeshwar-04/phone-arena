@@ -7,13 +7,17 @@ import {
 import type { FilterConfig } from "./types";
 import { DEFAULT_FILTERS } from "./types";
 
+import type { PhoneSpec, UserPhoneSpecs } from "./types";
+import { predictUserPhoneSpecs } from "./types";
+
 interface WizardProps {
-  onComplete: (filters: FilterConfig) => void;
+  phones: PhoneSpec[];
+  onComplete: (filters: FilterConfig, userPhone: UserPhoneSpecs | null) => void;
   onSkip: () => void;
 }
 
 type UsageType = "gaming" | "photography" | "daily" | "work" | "student";
-type BudgetTier = "budget" | "mid" | "premium" | "flagship";
+type BudgetTier = "entry" | "budget" | "mid" | "uppermid" | "premium" | "flagship";
 
 interface WizardState {
   usage: UsageType[];
@@ -36,9 +40,11 @@ const USAGE_OPTIONS: { key: UsageType; label: string; desc: string; icon: React.
 ];
 
 const BUDGET_OPTIONS: { key: BudgetTier; label: string; range: string; emoji: string }[] = [
-  { key: "budget", label: "Budget", range: "Under ₹20,000", emoji: "💰" },
-  { key: "mid", label: "Mid-Range", range: "₹20,000 – ₹45,000", emoji: "⚡" },
-  { key: "premium", label: "Premium", range: "₹45,000 – ₹85,000", emoji: "✨" },
+  { key: "entry", label: "Entry Level", range: "Under ₹10,000", emoji: "🪙" },
+  { key: "budget", label: "Budget", range: "₹10,000 – ₹20,000", emoji: "💰" },
+  { key: "mid", label: "Mid-Range", range: "₹20,000 – ₹35,000", emoji: "⚡" },
+  { key: "uppermid", label: "Upper Mid", range: "₹35,000 – ₹55,000", emoji: "🔥" },
+  { key: "premium", label: "Premium", range: "₹55,000 – ₹85,000", emoji: "✨" },
   { key: "flagship", label: "Flagship", range: "₹85,000+", emoji: "👑" },
 ];
 
@@ -61,17 +67,23 @@ function buildFiltersFromWizard(state: WizardState): FilterConfig {
 
   // Budget mapping
   switch (state.budget) {
+    case "entry":
+      filters.priceRange = [5000, 10000];
+      break;
     case "budget":
-      filters.priceRange = [5000, 20000];
+      filters.priceRange = [10000, 20000];
       break;
     case "mid":
-      filters.priceRange = [15000, 45000];
+      filters.priceRange = [20000, 35000];
+      break;
+    case "uppermid":
+      filters.priceRange = [35000, 55000];
       break;
     case "premium":
-      filters.priceRange = [35000, 85000];
+      filters.priceRange = [55000, 85000];
       break;
     case "flagship":
-      filters.priceRange = [75000, 250000];
+      filters.priceRange = [85000, 250000];
       break;
     default:
       filters.priceRange = [5000, 250000];
@@ -119,7 +131,7 @@ function buildFiltersFromWizard(state: WizardState): FilterConfig {
   return filters;
 }
 
-export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
+export function OnboardingWizard({ phones, onComplete, onSkip }: WizardProps) {
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>({
     usage: [],
@@ -133,7 +145,12 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
     preferredBrands: [],
   });
 
-  const totalSteps = 4;
+  // Current Phone Specs States (Streamlined prediction model)
+  const [currentPhoneBrand, setCurrentPhoneBrand] = useState("Samsung");
+  const [currentPhoneBattery, setCurrentPhoneBattery] = useState(5000);
+  const [currentPhoneAntutu, setCurrentPhoneAntutu] = useState("");
+
+  const totalSteps = 5;
 
   const toggleUsage = useCallback((key: UsageType) => {
     setState((s) => ({
@@ -157,8 +174,20 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
 
   const handleFinish = useCallback(() => {
     const filters = buildFiltersFromWizard(state);
-    onComplete(filters);
-  }, [state, onComplete]);
+    
+    let userPhone: UserPhoneSpecs | null = null;
+    const antutu = parseInt(currentPhoneAntutu) || 0;
+    
+    if (antutu > 0) {
+      userPhone = predictUserPhoneSpecs({
+        brand: currentPhoneBrand,
+        antutuScore: antutu,
+        batteryMah: currentPhoneBattery
+      });
+    }
+    
+    onComplete(filters, userPhone);
+  }, [state, onComplete, currentPhoneBrand, currentPhoneBattery, currentPhoneAntutu]);
 
   const canProceed = () => {
     if (step === 0) return state.usage.length > 0;
@@ -172,14 +201,14 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
       <div className="absolute inset-0 bg-gradient-to-br from-neutral-900/80 via-neutral-900/90 to-neutral-900/80 backdrop-blur-md" />
 
       {/* Wizard Card */}
-      <div className="relative w-full max-w-xl bg-white sm:rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up rounded-t-2xl max-h-[90dvh] flex flex-col">
+      <div className="relative w-full max-w-xl bg-white dark:bg-neutral-900 sm:rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up rounded-t-2xl max-h-[90dvh] flex flex-col border border-transparent dark:border-neutral-800">
         {/* Header Gradient Bar */}
         <div className="h-1.5 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500" />
 
         {/* Skip Button */}
         <button
           onClick={onSkip}
-          className="absolute top-4 right-4 z-10 text-neutral-400 hover:text-neutral-600 transition-colors p-1"
+          className="absolute top-4 right-4 z-10 text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-350 transition-colors p-1"
         >
           <X size={20} />
         </button>
@@ -189,7 +218,7 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
           {/* Progress */}
           <div className="flex items-center gap-2 mb-6">
             {Array.from({ length: totalSteps }).map((_, i) => (
-              <div key={i} className="flex-1 h-1.5 rounded-full overflow-hidden bg-neutral-100">
+              <div key={i} className="flex-1 h-1.5 rounded-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ease-out ${
                     i < step ? "bg-blue-600 w-full" : i === step ? "bg-blue-500 w-full animate-pulse" : "w-0"
@@ -204,12 +233,12 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
           {step === 0 && (
             <div className="wizard-step">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                   <Sparkles size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-neutral-900">What will you use your phone for?</h2>
-                  <p className="text-xs text-neutral-500">Select all that apply</p>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-white">What will you use your phone for?</h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Select all that apply</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
@@ -221,16 +250,16 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
                       onClick={() => toggleUsage(opt.key)}
                       className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 text-left transition-all duration-200 ${
                         selected
-                          ? "border-blue-500 bg-blue-50 shadow-sm"
-                          : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-sm"
+                          : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-850 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
                       }`}
                     >
-                      <div className={`flex-shrink-0 ${selected ? "text-blue-600" : "text-neutral-400"}`}>
+                      <div className={`flex-shrink-0 ${selected ? "text-blue-600 dark:text-blue-400" : "text-neutral-400 dark:text-neutral-500"}`}>
                         {opt.icon}
                       </div>
                       <div className="min-w-0">
-                        <div className={`text-sm font-semibold ${selected ? "text-blue-900" : "text-neutral-800"}`}>{opt.label}</div>
-                        <div className="text-[11px] text-neutral-500 truncate">{opt.desc}</div>
+                        <div className={`text-sm font-semibold ${selected ? "text-blue-900 dark:text-blue-200" : "text-neutral-800 dark:text-neutral-200"}`}>{opt.label}</div>
+                        <div className="text-[11px] text-neutral-500 dark:text-neutral-450 truncate">{opt.desc}</div>
                       </div>
                       {selected && (
                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
@@ -248,12 +277,12 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
           {step === 1 && (
             <div className="wizard-step">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+                <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center text-green-600 dark:text-green-400">
                   <IndianRupee size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-neutral-900">What's your budget?</h2>
-                  <p className="text-xs text-neutral-500">We'll filter phones in this range</p>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-white">What's your budget?</h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">We'll filter phones in this range</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 mt-5">
@@ -265,13 +294,13 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
                       onClick={() => setState((s) => ({ ...s, budget: opt.key }))}
                       className={`flex flex-col items-center gap-1.5 px-4 py-4 rounded-xl border-2 transition-all duration-200 ${
                         selected
-                          ? "border-green-500 bg-green-50 shadow-sm"
-                          : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50"
+                          ? "border-green-500 bg-green-50 dark:bg-green-950/20 shadow-sm"
+                          : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-850 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
                       }`}
                     >
                       <span className="text-2xl">{opt.emoji}</span>
-                      <span className={`text-sm font-bold ${selected ? "text-green-900" : "text-neutral-800"}`}>{opt.label}</span>
-                      <span className="text-[11px] text-neutral-500">{opt.range}</span>
+                      <span className={`text-sm font-bold ${selected ? "text-green-900 dark:text-green-200" : "text-neutral-800 dark:text-neutral-200"}`}>{opt.label}</span>
+                      <span className="text-[11px] text-neutral-500 dark:text-neutral-450">{opt.range}</span>
                     </button>
                   );
                 })}
@@ -283,12 +312,12 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
           {step === 2 && (
             <div className="wizard-step">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
+                <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center text-violet-600 dark:text-violet-400">
                   <RefreshCw size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-neutral-900">What matters most to you?</h2>
-                  <p className="text-xs text-neutral-500">Select your top priorities</p>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-white">What matters most to you?</h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Select your top priorities</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5">
@@ -300,15 +329,15 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
                       onClick={() => togglePriority(opt.key)}
                       className={`relative flex flex-col items-center gap-2 px-3 py-4 rounded-xl border-2 transition-all duration-200 ${
                         selected
-                          ? "border-violet-500 bg-violet-50 shadow-sm"
-                          : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50"
+                          ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20 shadow-sm"
+                          : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-850 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
                       }`}
                     >
-                      <div className={`${selected ? "text-violet-600" : "text-neutral-400"}`}>
+                      <div className={`${selected ? "text-violet-600 dark:text-violet-400" : "text-neutral-400 dark:text-neutral-500"}`}>
                         {opt.icon}
                       </div>
-                      <span className={`text-xs font-bold text-center ${selected ? "text-violet-900" : "text-neutral-700"}`}>{opt.label}</span>
-                      <span className="text-[10px] text-neutral-500 text-center leading-tight">{opt.desc}</span>
+                      <span className={`text-xs font-bold text-center ${selected ? "text-violet-900 dark:text-violet-200" : "text-neutral-700 dark:text-neutral-200"}`}>{opt.label}</span>
+                      <span className="text-[10px] text-neutral-500 dark:text-neutral-450 text-center leading-tight">{opt.desc}</span>
                       {selected && (
                         <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-violet-600 flex items-center justify-center">
                           <Check size={10} className="text-white" />
@@ -325,12 +354,12 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
           {step === 3 && (
             <div className="wizard-step">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
                   <Smartphone size={20} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-neutral-900">Any brand preference?</h2>
-                  <p className="text-xs text-neutral-500">Optional — leave empty to see all brands</p>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Any brand preference?</h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Optional — leave empty to see all brands</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mt-5">
@@ -339,8 +368,8 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
                   onClick={() => setState((s) => ({ ...s, preferredBrands: [] }))}
                   className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 cursor-pointer ${
                     state.preferredBrands.length === 0
-                      ? "border-orange-400 bg-orange-50 text-orange-850 shadow-sm"
-                      : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
+                      ? "border-orange-400 bg-orange-50 dark:bg-orange-950/20 text-orange-850 dark:text-orange-300 shadow-sm"
+                      : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-850 text-neutral-600 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
                   }`}
                 >
                   {state.preferredBrands.length === 0 && <Check size={12} className="inline mr-1.5 -mt-0.5" />}
@@ -354,8 +383,8 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
                       onClick={() => toggleBrand(brand)}
                       className={`px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 cursor-pointer ${
                         selected
-                          ? "border-orange-400 bg-orange-50 text-orange-800 shadow-sm"
-                          : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
+                          ? "border-orange-400 bg-orange-50 dark:bg-orange-950/20 text-orange-800 dark:text-orange-300 shadow-sm"
+                          : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-850 text-neutral-600 dark:text-neutral-350 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
                       }`}
                     >
                       {selected && <Check size={12} className="inline mr-1.5 -mt-0.5" />}
@@ -367,20 +396,102 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
             </div>
           )}
 
+          {/* Step 4: Current Phone (Optional Upgrade Comparison) */}
+          {step === 4 && (
+            <div className="wizard-step space-y-5">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <Smartphone size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Compare with your current phone?</h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Optional — we'll predict your phone's specs and show upgrade %</p>
+                </div>
+              </div>
+
+              {/* Brand Dropdown */}
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                  Phone Brand
+                </label>
+                <select
+                  value={currentPhoneBrand}
+                  onChange={(e) => setCurrentPhoneBrand(e.target.value)}
+                  className="w-full bg-neutral-50 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-3 py-2.5 text-sm rounded-xl text-neutral-800 dark:text-neutral-200 outline-none focus:border-indigo-500 appearance-none cursor-pointer"
+                >
+                  {["Samsung", "Apple", "OnePlus", "Xiaomi", "Realme", "POCO", "Vivo", "OPPO", "Motorola", "Nothing", "iQOO", "Google", "Honor", "Asus", "Sony", "Other"].map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Battery mAh Range Dropdown */}
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                  Battery Size (mAh)
+                </label>
+                <select
+                  value={currentPhoneBattery}
+                  onChange={(e) => setCurrentPhoneBattery(parseInt(e.target.value))}
+                  className="w-full bg-neutral-50 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-3 py-2.5 text-sm rounded-xl text-neutral-800 dark:text-neutral-200 outline-none focus:border-indigo-500 appearance-none cursor-pointer"
+                >
+                  <option value={3000}>~3,000 mAh (iPhone SE / Older)</option>
+                  <option value={3500}>~3,500 mAh (Compact flagships)</option>
+                  <option value={4000}>~4,000 mAh (iPhones / Mid-range)</option>
+                  <option value={4500}>~4,500 mAh (Standard 2023–24)</option>
+                  <option value={5000}>~5,000 mAh (Standard 2024–25)</option>
+                  <option value={5500}>~5,500 mAh (Large battery)</option>
+                  <option value={6000}>~6,000 mAh (Power devices)</option>
+                  <option value={7000}>~7,000 mAh (Ultra endurance)</option>
+                </select>
+              </div>
+
+              {/* AnTuTu Score Range Dropdown */}
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                  AnTuTu Score Range
+                </label>
+                <select
+                  value={currentPhoneAntutu}
+                  onChange={(e) => setCurrentPhoneAntutu(e.target.value)}
+                  className="w-full bg-neutral-50 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-3 py-2.5 text-sm rounded-xl text-neutral-800 dark:text-neutral-200 outline-none focus:border-indigo-500 appearance-none cursor-pointer"
+                >
+                  <option value="">— Select AnTuTu range —</option>
+                  <option value="150000">~150K (Entry-level / 2020 budget)</option>
+                  <option value="300000">~300K (Budget 2022–23)</option>
+                  <option value="450000">~450K (Mid-range 2022–23)</option>
+                  <option value="600000">~600K (Upper-mid 2023)</option>
+                  <option value="800000">~800K (Flagship 2022–23)</option>
+                  <option value="1000000">~1M (Flagship 2023–24)</option>
+                  <option value="1200000">~1.2M (Flagship 2024)</option>
+                  <option value="1500000">~1.5M (Flagship 2025)</option>
+                  <option value="2000000">~2M (Top-tier 2025–26)</option>
+                  <option value="2500000">~2.5M+ (Latest flagships 2026)</option>
+                </select>
+                {/* Tip */}
+                <div className="mt-2.5 px-3 py-2 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/15 border border-indigo-100/50 dark:border-indigo-900/25">
+                  <p className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold leading-relaxed">
+                    💡 <strong>Don't know your AnTuTu score?</strong> Google: <span className="font-mono bg-white/60 dark:bg-neutral-900/50 px-1 py-0.5 rounded text-[9px]">"your phone model" AnTuTu score</span> — e.g. "OnePlus Nord CE 3 AnTuTu score"
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 pt-4 border-t border-neutral-100">
+          <div className="flex items-center justify-between mt-8 pt-4 border-t border-neutral-100 dark:border-neutral-800">
             <div>
               {step > 0 ? (
                 <button
                   onClick={() => setStep(step - 1)}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-350 hover:text-neutral-900 dark:hover:text-white transition-colors"
                 >
                   <ChevronLeft size={16} /> Back
                 </button>
               ) : (
                 <button
                   onClick={onSkip}
-                  className="text-sm font-medium text-neutral-400 hover:text-neutral-600 transition-colors px-4 py-2"
+                  className="text-sm font-medium text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors px-4 py-2"
                 >
                   Skip for now
                 </button>
@@ -393,8 +504,8 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
                   disabled={!canProceed()}
                   className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
                     canProceed()
-                      ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-200"
-                      : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                      ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                      : "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed"
                   }`}
                 >
                   Continue <ChevronRight size={16} />
@@ -402,7 +513,7 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
               ) : (
                 <button
                   onClick={handleFinish}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-700 hover:to-violet-700 shadow-sm shadow-blue-200 transition-all duration-200"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-700 hover:to-violet-700 shadow-sm transition-all duration-200"
                 >
                   <Sparkles size={16} /> Find My Perfect Phone
                 </button>
