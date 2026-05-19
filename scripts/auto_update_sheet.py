@@ -223,7 +223,33 @@ def parse_release_date_to_yyyy_mm(date_str: str) -> str:
             break
     return f"{year}-{month}"
 
-def extract_from_detail_page(detail_url: str) -> tuple[str, int | None]:
+def parse_charging_time(fast_charging_str: str, wattage: int, battery_mah: int) -> int:
+    m_100 = re.search(r'100%\s*in\s*(\d+)\s*min', fast_charging_str, re.IGNORECASE)
+    if m_100:
+        return int(m_100.group(1))
+        
+    m_pct = re.search(r'(\d+)%\s*in\s*(\d+)\s*min', fast_charging_str, re.IGNORECASE)
+    if m_pct:
+        pct = int(m_pct.group(1))
+        mins = int(m_pct.group(2))
+        if pct > 0:
+            return min(180, max(15, int(mins * (100 / pct) * 1.25)))
+            
+    w = max(5, wattage)
+    return min(200, max(15, int((battery_mah / 5000.0) * (1100.0 / (w ** 0.75)))))
+
+def parse_sot(test_result_str: str, playback_str: str, battery_mah: int) -> float:
+    m = re.search(r'(\d+(?:\.\d+)?)\s*hours', test_result_str, re.IGNORECASE)
+    if m:
+        return float(m.group(1))
+        
+    m_play = re.search(r'(\d+(?:\.\d+)?)\s*hours', playback_str, re.IGNORECASE)
+    if m_play:
+        return round(float(m_play.group(1)) / 1.3, 1)
+        
+    return round((battery_mah / 5000.0) * 14.5, 1)
+
+def extract_from_detail_page(detail_url: str, battery_mah: int, charging_w: int) -> tuple[str, int | None, float, int]:
     req = urllib.request.Request(detail_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
     try:
         resp = urllib.request.urlopen(req, timeout=10)
@@ -232,6 +258,9 @@ def extract_from_detail_page(detail_url: str) -> tuple[str, int | None]:
         
         release_date = ""
         os_updates = None
+        test_result = ""
+        fast_charging = ""
+        video_playback = ""
         
         for row in soup.select("tr"):
             cells = [c.get_text(strip=True) for c in row.select("td, th")]
@@ -244,14 +273,25 @@ def extract_from_detail_page(detail_url: str) -> tuple[str, int | None]:
                     m = re.search(r'(\d+)', val)
                     if m:
                         os_updates = int(m.group(1))
+                elif "battery test result" in label:
+                    test_result = val
+                elif "fast charging" in label:
+                    fast_charging = val
+                elif "video playback" in label:
+                    video_playback = val
                         
         if release_date:
             release_date = parse_release_date_to_yyyy_mm(release_date)
             
-        return release_date, os_updates
+        sot_hours = parse_sot(test_result, video_playback, battery_mah)
+        charging_mins = parse_charging_time(fast_charging, charging_w, battery_mah)
+            
+        return release_date, os_updates, sot_hours, charging_mins
     except Exception as e:
         logger.warning(f"Error fetching detail page {detail_url}: {e}")
-        return "", None
+        sot_hours = parse_sot("", "", battery_mah)
+        charging_mins = parse_charging_time("", charging_w, battery_mah)
+        return "", None, sot_hours, charging_mins
 
 def estimate_launch_date(cpu_name: str) -> str:
     name = cpu_name.lower()
@@ -379,11 +419,13 @@ def scrape_live_phones(limit=1500) -> list[dict]:
             relative_link = link_el.get("href") if link_el else ""
             launch_date = ""
             os_updates_years = None
+            sot_hours = parse_sot("", "", battery_mah)
+            charging_mins = parse_charging_time("", charging_w, battery_mah)
             
             if relative_link:
                 detail_url = relative_link if relative_link.startswith("http") else "https://www.smartprix.com" + relative_link
                 logger.info(f"Fetching actual launch date and OS updates for {name} from {detail_url}...")
-                launch_date, os_updates_years = extract_from_detail_page(detail_url)
+                launch_date, os_updates_years, sot_hours, charging_mins = extract_from_detail_page(detail_url, battery_mah, charging_w)
                 time.sleep(0.2) # Polite request throttling
                 
             if not launch_date:
@@ -397,6 +439,8 @@ def scrape_live_phones(limit=1500) -> list[dict]:
                 "image_url": img_url,
                 "launch_date": launch_date,
                 "os_updates_years": os_updates_years,
+                "sot_hours": sot_hours,
+                "charging_mins": charging_mins,
                 "cpu_name": cpu_name,
                 "battery_mah": battery_mah,
                 "charging_w": charging_w,
@@ -443,6 +487,8 @@ def build_sheet_row(phone: dict) -> dict:
         "front_camera_score": calc_cam_front(phone.get("front_camera_mp", 16), price),
         "display_refresh_hz": phone.get("display_refresh_hz", 90),
         "build_quality_score": calc_build(price),
+        "sot_hours": phone.get("sot_hours", 14.5),
+        "charging_mins": phone.get("charging_mins", 60),
     }
 
 # ── Google Sheets Writer ─────────────────────────────────────────────────────
@@ -451,7 +497,7 @@ SHEET_HEADERS = [
     "cpu_name", "antutu_score", "storage_type", "ram_type", "screen_type",
     "raw_cpu_score", "raw_ui_score", "os_updates_years",
     "battery_mah", "charging_w", "main_camera_score", "front_camera_score",
-    "display_refresh_hz", "build_quality_score"
+    "display_refresh_hz", "build_quality_score", "sot_hours", "charging_mins"
 ]
 
 def authenticate():

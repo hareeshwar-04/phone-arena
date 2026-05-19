@@ -88,7 +88,7 @@ export function PhoneDetail({ phone, onClose }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-6">
                 <SpecItem icon={<Cpu size={18} />} label="Processor" value={phone.cpu_name} subValue={`${(phone.raw_cpu_score).toFixed(1)}/10 Power Rating`} />
                 <SpecItem icon={<Monitor size={18} />} label="Display" value={`${phone.display_refresh_hz}Hz ${phone.screen_type}`} />
-                <SpecItem icon={<Battery size={18} />} label="Battery" value={`${phone.battery_mah} mAh`} subValue={`${phone.charging_w}W Fast Charging`} />
+                <SpecItem icon={<Battery size={18} />} label="Battery & Charging" value={`${phone.battery_mah} mAh (${phone.sot_hours.toFixed(1)}h Active SOT)`} subValue={`${phone.charging_w}W Fast Charging (0-100% in ${phone.charging_mins}m)`} />
                 <SpecItem icon={<Camera size={18} />} label="Cameras" value={`${phone.main_camera_score.toFixed(1)}/10 Main`} subValue={`${phone.front_camera_score.toFixed(1)}/10 Selfie`} />
                 <SpecItem icon={<Smartphone size={18} />} label="Memory Type" value={phone.storage_type} subValue={`${phone.ram_type} RAM`} />
                 <SpecItem icon={<Shield size={18} />} label="Durability & OS" value={`${phone.os_updates_years} Years OS Updates`} subValue={`${osStatus.message} (Launch: ${phone.launch_date})`} />

@@ -48,7 +48,9 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
 
     { label: "Refresh Rate", key: "ref", getValue: (p) => p.display_refresh_hz, fmt: (v) => `${v}Hz`, higherBetter: true },
     { label: "Battery", key: "bat", getValue: (p) => p.battery_mah, fmt: (v) => `${v} mAh`, higherBetter: true },
-    { label: "Charging", key: "chg", getValue: (p) => p.charging_w, fmt: (v) => `${v}W`, higherBetter: true },
+    { label: "Active SOT", key: "sot", getValue: (p) => p.sot_hours, fmt: (v) => `${Number(v).toFixed(1)} hrs`, higherBetter: true },
+    { label: "Charging Speed", key: "chg", getValue: (p) => p.charging_w, fmt: (v) => `${v}W`, higherBetter: true },
+    { label: "Full Charge Time", key: "chg_time", getValue: (p) => p.charging_mins, fmt: (v) => `${v} mins`, higherBetter: false },
     { label: "Main Camera", key: "cam", getValue: (p) => p.main_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "Selfie Camera", key: "sel", getValue: (p) => p.front_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "Build Quality", key: "bld", getValue: (p) => p.build_quality_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
