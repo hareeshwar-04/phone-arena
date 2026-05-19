@@ -97,7 +97,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
                   : "bg-neutral-50 text-neutral-600 border border-neutral-200/60"
               }`}>{phone.screen_type.split(" ")[0]}</span>
             </p>
-            <h3 className="text-sm font-black text-neutral-900 tracking-tight leading-tight mt-1 truncate" title={phone.name}>
+            <h3 className="text-sm font-black text-neutral-900 tracking-tight leading-tight mt-1" title={phone.name}>
               {phone.name}
             </h3>
             <p className="text-base font-black text-blue-600 mt-1">{formatINR(phone.price_inr)}</p>
