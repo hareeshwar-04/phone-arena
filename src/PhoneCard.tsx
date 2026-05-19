@@ -1,4 +1,4 @@
-import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monitor, ExternalLink } from "lucide-react";
+import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monitor, ExternalLink, ShoppingCart } from "lucide-react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 
@@ -106,9 +106,12 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
         </div>
         
         <div className="flex items-center gap-2">
-          <button onClick={(e) => { e.stopPropagation(); onToggle(phone.id); }} className={`w-full py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${isCompared ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
+          <button onClick={(e) => { e.stopPropagation(); onToggle(phone.id); }} className={`flex-1 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 ${isCompared ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 border border-neutral-200/50"}`}>
             {isCompared ? <><X size={14} /> Remove</> : <><Plus size={14} /> Compare</>}
           </button>
+          <a href={`https://www.amazon.in/s?k=${encodeURIComponent(phone.name)}&tag=YOUR_AMAZON_AFFILIATE_ID_HERE`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex-1 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
+            <ShoppingCart size={14} /> Buy Now
+          </a>
         </div>
       </div>
     </div>
