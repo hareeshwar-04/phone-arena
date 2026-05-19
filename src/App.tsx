@@ -625,16 +625,24 @@ export default function App() {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView("discover")}>
-            <div className="w-10 h-10 rounded-xl animate-spin-gradient flex items-center justify-center shadow-md relative overflow-hidden group-hover:scale-105 transition-transform duration-300">
-              <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" />
-              <Smartphone size={20} className="text-white relative z-10 animate-bounce-subtle" />
+            <div className="relative w-10 h-10 flex items-center justify-center flex-shrink-0 scale-95 group-hover:scale-100 transition-transform duration-300">
+              {/* Overlapping back device shadow layer */}
+              <div className="absolute w-5 h-7 rounded-[4px] bg-gradient-to-br from-indigo-500/20 to-purple-600/20 blur-[2px] -rotate-12 translate-x-[-3px] translate-y-[-1px]" />
+              {/* Back Device Glass Layer */}
+              <div className="absolute w-5.5 h-7.5 rounded-[5px] bg-gradient-to-br from-indigo-600 to-purple-600 -rotate-12 translate-x-[-3px] translate-y-[-1px] transition-transform duration-300 group-hover:rotate-[-6deg] group-hover:translate-x-[-4px] shadow-sm" />
+              {/* Front Device Glass Layer */}
+              <div className="absolute w-5.5 h-7.5 rounded-[5px] bg-gradient-to-tr from-blue-500 to-cyan-400 rotate-12 translate-x-[3px] translate-y-[1px] border border-white/20 shadow-md backdrop-blur-[2px] flex items-center justify-center transition-transform duration-300 group-hover:rotate-[6deg] group-hover:translate-x-[4px]">
+                {/* Micro-lens details representing camera module */}
+                <div className="w-1.5 h-1.5 rounded-full bg-white/90 shadow-[0_0_4px_#fff] animate-pulse" />
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-black tracking-tight text-neutral-900 flex items-center gap-1">
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">PhoneArena</span>
-                <span className="text-[9px] bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 px-1.5 py-0.5 rounded font-black uppercase">India</span>
+            <div className="leading-none flex flex-col justify-center">
+              <h1 className="text-sm font-black tracking-tight text-neutral-900 dark:text-white flex items-center gap-1.5">
+                <span className="font-black tracking-tighter text-neutral-800 dark:text-neutral-100">PHONE</span>
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent font-black tracking-[0.1em] text-[13px]">ARENA</span>
+                <span className="text-[7.5px] bg-blue-600 text-white dark:bg-blue-500 px-1 py-0.5 rounded font-black tracking-wider uppercase">IN</span>
               </h1>
-              <p className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400">Smart Comparison Engine</p>
+              <p className="text-[7px] font-black uppercase tracking-[0.25em] text-neutral-400 dark:text-neutral-500 mt-1">Smart Comparison Engine</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
