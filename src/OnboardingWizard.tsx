@@ -36,10 +36,10 @@ const USAGE_OPTIONS: { key: UsageType; label: string; desc: string; icon: React.
 ];
 
 const BUDGET_OPTIONS: { key: BudgetTier; label: string; range: string; emoji: string }[] = [
-  { key: "budget", label: "Budget", range: "Under ₹15,000", emoji: "💰" },
-  { key: "mid", label: "Mid-Range", range: "₹15,000 – ₹30,000", emoji: "⚡" },
-  { key: "premium", label: "Premium", range: "₹30,000 – ₹60,000", emoji: "✨" },
-  { key: "flagship", label: "Flagship", range: "₹60,000+", emoji: "👑" },
+  { key: "budget", label: "Budget", range: "Under ₹20,000", emoji: "💰" },
+  { key: "mid", label: "Mid-Range", range: "₹20,000 – ₹45,000", emoji: "⚡" },
+  { key: "premium", label: "Premium", range: "₹45,000 – ₹85,000", emoji: "✨" },
+  { key: "flagship", label: "Flagship", range: "₹85,000+", emoji: "👑" },
 ];
 
 const BRAND_OPTIONS = [
@@ -62,19 +62,19 @@ function buildFiltersFromWizard(state: WizardState): FilterConfig {
   // Budget mapping
   switch (state.budget) {
     case "budget":
-      filters.priceRange = [5000, 15000];
+      filters.priceRange = [5000, 20000];
       break;
     case "mid":
-      filters.priceRange = [10000, 30000];
+      filters.priceRange = [15000, 45000];
       break;
     case "premium":
-      filters.priceRange = [25000, 60000];
+      filters.priceRange = [35000, 85000];
       break;
     case "flagship":
-      filters.priceRange = [50000, 200000];
+      filters.priceRange = [75000, 250000];
       break;
     default:
-      filters.priceRange = [5000, 200000];
+      filters.priceRange = [5000, 250000];
   }
 
   // Usage → weight mapping
@@ -334,13 +334,25 @@ export function OnboardingWizard({ onComplete, onSkip }: WizardProps) {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mt-5">
+                <button
+                  key="any-brand"
+                  onClick={() => setState((s) => ({ ...s, preferredBrands: [] }))}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 cursor-pointer ${
+                    state.preferredBrands.length === 0
+                      ? "border-orange-400 bg-orange-50 text-orange-850 shadow-sm"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
+                  }`}
+                >
+                  {state.preferredBrands.length === 0 && <Check size={12} className="inline mr-1.5 -mt-0.5" />}
+                  Any Brand
+                </button>
                 {BRAND_OPTIONS.map((brand) => {
                   const selected = state.preferredBrands.includes(brand);
                   return (
                     <button
                       key={brand}
                       onClick={() => toggleBrand(brand)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
+                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 cursor-pointer ${
                         selected
                           ? "border-orange-400 bg-orange-50 text-orange-800 shadow-sm"
                           : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
