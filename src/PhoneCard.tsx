@@ -3,6 +3,7 @@ import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monito
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 import { getOSUpdatesStatus, calcMatchScore } from "./hooks";
+import { PhoneImage } from "./PhoneImage";
 
 export function SkeletonCard() {
   return (
@@ -33,11 +34,11 @@ function renderBadgeWithIcon(badge: string) {
   if (badge.includes("Best Performance")) {
     text = "Performance King";
     icon = <Zap size={10} className="fill-current" />;
-    classes = "bg-gradient-to-r from-violet-500/10 to-indigo-500/10 text-indigo-700 dark:text-indigo-350 border border-indigo-200/60 dark:border-indigo-850/50 shadow-[0_1px_2px_rgba(99,102,241,0.05)]";
+    classes = "bg-gradient-to-r from-violet-500/10 to-indigo-500/10 text-indigo-700 dark:text-indigo-355 border border-indigo-200/60 dark:border-indigo-850/50 shadow-[0_1px_2px_rgba(99,102,241,0.05)]";
   } else if (badge.includes("Best Camera")) {
     text = "Pro Camera";
     icon = <Camera size={10} className="fill-current" />;
-    classes = "bg-gradient-to-r from-rose-500/10 to-pink-500/10 text-rose-700 dark:text-rose-350 border border-rose-200/60 dark:border-rose-850/50 shadow-[0_1px_2px_rgba(244,63,94,0.05)]";
+    classes = "bg-gradient-to-r from-rose-500/10 to-pink-500/10 text-rose-700 dark:text-rose-355 border border-rose-200/60 dark:border-rose-850/50 shadow-[0_1px_2px_rgba(244,63,94,0.05)]";
   } else if (badge.includes("Best Value")) {
     text = "Value Champion";
     icon = <Star size={10} className="fill-current" />;
@@ -45,7 +46,7 @@ function renderBadgeWithIcon(badge: string) {
   } else if (badge.includes("Best Battery")) {
     text = "Battery Monster";
     icon = <Battery size={10} className="fill-current" />;
-    classes = "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-700 dark:text-emerald-350 border border-emerald-200/60 dark:border-emerald-850/50 shadow-[0_1px_2px_rgba(16,185,129,0.05)]";
+    classes = "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 text-emerald-700 dark:text-emerald-355 border border-emerald-200/60 dark:border-emerald-850/50 shadow-[0_1px_2px_rgba(16,185,129,0.05)]";
   } else {
     classes = "bg-neutral-50 dark:bg-neutral-850 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800";
   }
@@ -102,11 +103,11 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
         {/* Product Details Header */}
         <div className="flex items-start gap-4 mb-4 border-b border-neutral-100 pb-4">
           <div className="w-16 h-20 image-container-bg flex items-center justify-center flex-shrink-0 rounded-xl p-1 border border-neutral-100 dark:border-neutral-700">
-            <img 
-              src={phone.image_url} 
-              alt={phone.name} 
-              className="max-w-full max-h-full object-contain" 
-              loading="lazy" 
+            <PhoneImage 
+              imageUrl={phone.image_url} 
+              name={phone.name} 
+              brand={phone.brand} 
+              iconSize={20}
             />
           </div>
           <div className="flex-1 min-w-0 pt-0.5">

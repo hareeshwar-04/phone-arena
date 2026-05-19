@@ -3,6 +3,7 @@ import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone, Trophy, Sparkles, M
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 import { useVerdict, getOSUpdatesStatus, calcMatchScore, getRamStorage, formatLaunchDate } from "./hooks";
+import { PhoneImage } from "./PhoneImage";
 
 function getVariantConfig(p: PhoneWithRatings, v: number) {
   const base = getRamStorage(p.name);
@@ -314,11 +315,12 @@ export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneW
 
                         {/* Device Image */}
                         <div className="w-20 h-24 image-container-bg flex items-center justify-center rounded-xl p-1.5 border border-neutral-200/60 shadow-sm mb-1.5 relative overflow-hidden">
-                          <img 
-                            src={p.image_url} 
-                            alt={p.name} 
+                          <PhoneImage 
+                            imageUrl={p.image_url} 
+                            name={p.name} 
+                            brand={p.brand} 
                             className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-300"
-                            loading="lazy" 
+                            iconSize={22}
                           />
                         </div>
 

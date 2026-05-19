@@ -3,6 +3,7 @@ import { useMemo, useEffect } from "react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 import { getProsAndCons, getOSUpdatesStatus, calcMatchScore, getRamStorage, formatLaunchDate } from "./hooks";
+import { PhoneImage } from "./PhoneImage";
 
 interface Props {
   phone: PhoneWithRatings;
@@ -161,7 +162,7 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
               {/* Left Column - Image & Quick Buy */}
               <div className="w-full lg:w-80 flex-shrink-0 flex flex-col">
                 <div className="w-full aspect-[3/4] image-container-bg rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm mb-6 relative flex items-center justify-center p-6">
-                  <img src={phone.image_url} alt={phone.name} className="max-w-full max-h-full object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" />
+                  <PhoneImage imageUrl={phone.image_url} name={phone.name} brand={phone.brand} className="max-w-full max-h-full object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" iconSize={40} />
                 </div>
                 
                 <div className="w-full bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
@@ -394,7 +395,7 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
                             </div>
                             
                             <div className="w-16 sm:w-20 aspect-[3/4] image-container-bg flex-shrink-0 flex items-center justify-center p-2 rounded-xl border border-neutral-100 group-hover:scale-105 transition-transform">
-                              <img src={s.phone.image_url} alt={s.phone.name} className="max-h-full max-w-full object-contain" />
+                              <PhoneImage imageUrl={s.phone.image_url} name={s.phone.name} brand={s.phone.brand} className="max-h-full max-w-full object-contain" iconSize={20} />
                             </div>
                             
                             <div className="flex-1 pr-8 sm:pr-4">
