@@ -368,7 +368,7 @@ export default function App() {
   const [legalModalTab, setLegalModalTab] = useState<"terms" | "privacy" | "affiliate">("terms");
   const [showTooltip, setShowTooltip] = useState(() => !localStorage.getItem("pa_spec_tooltip_v3"));
   const [showWizardTooltip, setShowWizardTooltip] = useState(() => !localStorage.getItem("pa_wizard_tooltip_v3"));
-  const [theme, setTheme] = useState<"light" | "dark">(() => (localStorage.getItem("pa_theme") as "light" | "dark") || "light");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [styleMode, setStyleMode] = useState<"colorful" | "stealth">(() => (localStorage.getItem("pa_style_mode") as "colorful" | "stealth") || "colorful");
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
