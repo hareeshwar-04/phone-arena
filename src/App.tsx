@@ -665,29 +665,29 @@ export default function App() {
             </div>
 
             {/* View Tabs */}
-            <div className="hidden sm:flex items-center rounded-xl bg-neutral-100 dark:bg-neutral-800 p-1 shadow-sm">
+            <div className="hidden sm:flex items-center gap-1.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-1 shadow-sm border border-neutral-200/40 dark:border-neutral-750/30">
               <button 
                 onClick={() => setView("discover")} 
-                className={`px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-200 ${
+                className={`px-5.5 py-2.5 rounded-xl text-[13px] font-black uppercase tracking-wider transition-all duration-200 ${
                   view === "discover" 
-                    ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-450 shadow-sm" 
-                    : "text-neutral-550 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
+                    ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-md shadow-neutral-200/40 dark:shadow-none scale-[1.01]" 
+                    : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:scale-[1.01]"
                 }`}
               >
-                <span className="flex items-center gap-1.5"><Search size={13} /> Browse</span>
+                <span className="flex items-center gap-2"><Search size={15} /> Browse</span>
               </button>
               <div className="relative">
                 <button 
                   onClick={() => setView("compare")} 
-                  className={`relative px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-200 ${
+                  className={`relative px-5.5 py-2.5 rounded-xl text-[13px] font-black uppercase tracking-wider transition-all duration-200 ${
                     view === "compare" 
-                      ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-450 shadow-sm" 
-                      : "text-neutral-555 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
-                  } ${highlightCompare ? "animate-wiggle bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow" : ""}`}
+                      ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-md shadow-neutral-200/40 dark:shadow-none scale-[1.01]" 
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:scale-[1.01]"
+                  } ${highlightCompare ? "animate-wiggle bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-lg" : ""}`}
                 >
-                  <span className="flex items-center gap-1.5"><Layers size={13} /> Compare</span>
+                  <span className="flex items-center gap-2"><Layers size={15} /> Compare</span>
                   {comparedIds.length > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-blue-600 text-[8px] font-black text-white flex items-center justify-center border border-white dark:border-neutral-750 shadow-sm">
+                    <span className="absolute -top-1.5 -right-1.5 w-5.5 h-5.5 rounded-full bg-blue-600 text-[10px] font-black text-white flex items-center justify-center border-2 border-white dark:border-neutral-850 shadow-md">
                       {comparedIds.length}
                     </span>
                   )}
@@ -745,36 +745,51 @@ export default function App() {
                   </div>
                 </div>
               )}
-              <button onClick={() => setView("discover")} className={`p-2 rounded transition-colors ${view === "discover" ? "bg-blue-50 text-blue-600" : "text-neutral-500"}`}><Search size={18} /></button>
-              <div className="relative">
+              <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200/40 dark:border-neutral-750/30">
                 <button 
-                  onClick={() => setView("compare")} 
-                  className={`relative p-2 rounded transition-all duration-300 ${
-                    view === "compare" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-neutral-500"
-                  } ${highlightCompare ? "animate-wiggle ring-2 ring-blue-500/70 bg-blue-100 text-blue-700" : ""}`}
+                  onClick={() => setView("discover")} 
+                  className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                    view === "discover" 
+                      ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm font-black" 
+                      : "text-neutral-500 dark:text-neutral-400 font-bold"
+                  }`}
                 >
-                  <Layers size={18} />
-                  {comparedIds.length > 0 && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-blue-600 text-[8px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
+                  Browse
                 </button>
+                <div className="relative">
+                  <button 
+                    onClick={() => setView("compare")} 
+                    className={`relative px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                      view === "compare" 
+                        ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm font-black" 
+                        : "text-neutral-500 dark:text-neutral-400 font-bold"
+                    } ${highlightCompare ? "animate-wiggle bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : ""}`}
+                  >
+                    Compare
+                    {comparedIds.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-[8px] font-black text-white flex items-center justify-center border border-white dark:border-neutral-850 shadow-sm">
+                        {comparedIds.length}
+                      </span>
+                    )}
+                  </button>
 
-                {showComparePopup && (
-                  <div className="absolute top-full mt-3 right-0 w-48 bg-blue-600 text-white rounded-xl p-2.5 shadow-2xl z-[999] border border-blue-500 animate-fade-in-up">
-                    <div className="absolute bottom-full right-3.5 w-2.5 h-2.5 bg-blue-600 rotate-45 transform translate-y-1.5" />
-                    <div className="flex items-start justify-between gap-1.5">
-                      <p className="text-[10px] font-bold leading-normal">
-                        Added! Tap here to compare.
-                      </p>
-                      <button 
-                        onClick={() => setShowComparePopup(false)} 
-                        className="text-blue-200 hover:text-white flex-shrink-0"
-                      >
-                        <X size={10} />
-                      </button>
+                  {showComparePopup && (
+                    <div className="absolute top-full mt-3 right-0 w-48 bg-blue-600 text-white rounded-xl p-2.5 shadow-2xl z-[999] border border-blue-500 animate-fade-in-up">
+                      <div className="absolute bottom-full right-3.5 w-2.5 h-2.5 bg-blue-600 rotate-45 transform translate-y-1.5" />
+                      <div className="flex items-start justify-between gap-1.5">
+                        <p className="text-[10px] font-bold leading-normal">
+                          Added! Tap here to compare.
+                        </p>
+                        <button 
+                          onClick={() => setShowComparePopup(false)} 
+                          className="text-blue-200 hover:text-white flex-shrink-0"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
             <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
