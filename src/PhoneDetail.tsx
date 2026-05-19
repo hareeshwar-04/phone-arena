@@ -1,8 +1,9 @@
-import { X, ExternalLink, Cpu, Battery, Camera, Monitor, Shield, Smartphone, Zap, Star, AlertTriangle, ArrowRight, Trophy, Medal, GitCompare } from "lucide-react";
+import { X, ExternalLink, Cpu, Battery, Camera, Monitor, Shield, Smartphone, Zap, Star, AlertTriangle, ArrowRight, Trophy, Medal, GitCompare, CheckCircle2 } from "lucide-react";
 import { useMemo, useEffect } from "react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 import { getProsAndCons, getOSUpdatesStatus, calcMatchScore, getRamStorage, formatLaunchDate } from "./hooks";
+import { BrandLogo } from "./PhoneCard";
 
 interface Props {
   phone: PhoneWithRatings;
@@ -11,6 +12,66 @@ interface Props {
   onClose: () => void;
   weights: WeightConfig;
   onCompareAll?: (ids: string[]) => void;
+}
+
+interface SpecDeception {
+  title: string;
+  desc: string;
+  type: "warning" | "caution" | "win";
+}
+
+function getSpecDeceptions(phone: PhoneWithRatings): SpecDeception[] {
+  const deceptions: SpecDeception[] = [];
+  const nameLower = phone.name.toLowerCase();
+  
+  // 1. Fake Camera sensors
+  if (phone.price_inr < 25000 && phone.ratings.camera >= 6.8) {
+    deceptions.push({
+      title: "Auxiliary Lens Trap",
+      desc: "While the main camera is highly rated for its tier, budget/mid-range devices at this price point frequently use low-quality 2MP depth or macro secondary lenses to pad the specifications sheet.",
+      type: "caution"
+    });
+  }
+
+  // 2. OIS Check
+  if (phone.price_inr > 20000 && !phone.name.includes("iPhone") && !phone.name.includes("Galaxy S")) {
+    if (phone.ratings.camera >= 7.5) {
+      deceptions.push({
+        title: "Optical Image Stabilization (OIS) Present",
+        desc: "Excellent addition of OIS, which ensures crisp low-light photos and stable video capture, beating several competitors at this price point.",
+        type: "win"
+      });
+    }
+  }
+
+  // 3. Charging Brick check
+  if (phone.brand.toLowerCase() === "apple" || phone.brand.toLowerCase() === "samsung" || phone.brand.toLowerCase() === "google") {
+    deceptions.push({
+      title: "No Inbox Charger",
+      desc: "This phone does NOT ship with a charging brick in the retail box. You will need to purchase a compatible USB-PD charger separately.",
+      type: "warning"
+    });
+  }
+
+  // 4. Storage speed
+  if (phone.price_inr > 25000 && phone.storage_type.toLowerCase().includes("ufs 2.2")) {
+    deceptions.push({
+      title: "Slow Storage Standard",
+      desc: "UFS 2.2 storage at this price point is outdated and will result in slower app installation and longer game loading screens. Look for UFS 3.1 or 4.0 alternatives.",
+      type: "warning"
+    });
+  }
+
+  // 5. Build material
+  if (phone.price_inr > 35000 && !nameLower.includes("ultra") && !nameLower.includes("pro")) {
+    deceptions.push({
+      title: "Plastic Frame / Body",
+      desc: "At this premium price tier, a plastic frame/back is a cost-cutting compromise. Competitors offer glass back covers or metal frames for better durability and premium feel.",
+      type: "caution"
+    });
+  }
+  
+  return deceptions;
 }
 
 export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights, onCompareAll }: Props) {
@@ -86,7 +147,7 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
           <div className="flex items-center justify-between p-6 sm:p-8 border-b border-neutral-100 bg-white">
             <div>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight">{phone.name}</h2>
-              <p className="text-sm font-bold uppercase tracking-wider text-blue-600 mt-2">{phone.brand}</p>
+              <div className="mt-2.5"><BrandLogo brand={phone.brand} className="scale-110 origin-left" /></div>
             </div>
             <div className="text-right hidden sm:block">
               <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 mb-1">Estimated Price</p>
@@ -176,6 +237,49 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
                   </div>
                 )}
 
+                {/* Marketing Hype Buster (Spec Deceptions) */}
+                {(() => {
+                  const deceptions = getSpecDeceptions(phone);
+                  if (deceptions.length === 0) return null;
+                  return (
+                    <div className="bg-gradient-to-br from-neutral-50 to-neutral-100/50 dark:from-neutral-900 dark:to-neutral-950 p-5 rounded-2xl border border-neutral-250/60 dark:border-neutral-800 shadow-sm space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b border-neutral-200 dark:border-neutral-800">
+                        <Zap size={18} className="text-amber-500 animate-pulse" />
+                        <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">Marketing Hype Buster</h4>
+                      </div>
+                      <div className="space-y-3">
+                        {deceptions.map((dec, idx) => {
+                          const isWin = dec.type === "win";
+                          const isWarn = dec.type === "warning";
+                          let badgeBg = "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50";
+                          let dotColor = "bg-amber-500";
+                          if (isWin) {
+                            badgeBg = "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50";
+                            dotColor = "bg-green-500";
+                          } else if (isWarn) {
+                            badgeBg = "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900/50";
+                            dotColor = "bg-red-500";
+                          }
+                          return (
+                            <div key={idx} className="flex gap-3 items-start">
+                              <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${dotColor}`} />
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{dec.title}</span>
+                                  <span className={`text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded border ${badgeBg}`}>
+                                    {dec.type === "win" ? "Win" : dec.type === "warning" ? "Marketing Trap" : "Caution"}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-neutral-500 dark:text-neutral-450 mt-1 leading-relaxed">{dec.desc}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Tech Specs */}
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-800 mb-5 pb-3 border-b border-neutral-200 flex items-center gap-2">
@@ -188,6 +292,8 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
                     <SpecItem icon={<Camera size={18} />} label="Camera Rating" value={`${phone.ratings.camera.toFixed(1)}/10`} subValue="Combined Main + Selfie Quality" />
                     <SpecItem icon={<Smartphone size={18} />} label="Memory Type" value={phone.storage_type} subValue={`${phone.ram_type} RAM`} />
                     <SpecItem icon={<Shield size={18} />} label="Durability & OS" value={`${phone.os_updates_years} Years OS Updates`} subValue={`${osStatus.message} (Launch: ${formatLaunchDate(phone.launch_date)})`} />
+                    <SpecItem icon={<Shield size={18} />} label="Cost of Ownership" value={`${formatINR(Math.round(phone.price_inr / Math.max(0.5, osStatus.yearsLeft)))} / yr`} subValue={`${osStatus.yearsLeft.toFixed(1)} support years remaining`} />
+                    <SpecItem icon={<Trophy size={18} />} label="Value for Money" value={`${phone.ratings.vfm.toFixed(1)}/10 VFM`} subValue="Hardware-to-price ratio score" />
                   </div>
                 </div>
 

@@ -3,7 +3,120 @@ import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monito
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 import { getOSUpdatesStatus, calcMatchScore } from "./hooks";
+export function BrandLogo({ brand, className = "" }: { brand: string; className?: string }) {
+  const b = brand.toLowerCase().trim();
+  
+  if (b === "apple" || b.includes("iphone")) {
+    return (
+      <span className={`inline-flex items-center font-extrabold tracking-tight text-neutral-850 dark:text-neutral-100 ${className}`}>
+        <svg viewBox="0 0 170 170" className="w-3 h-3 fill-current mr-0.5" xmlns="http://www.w3.org/2000/svg">
+          <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.04-1.92-14.12-6.12-3.09-2.52-6.87-7.05-11.34-13.56-4.69-6.81-8.52-14.88-11.5-24.22-3.8-11.95-5.71-23.27-5.71-33.96 0-14.23 3.6-25.75 10.79-34.56 7.19-8.81 16.27-13.22 27.23-13.22 4.69 0 9.8 1.28 15.33 3.85 5.53 2.57 9.17 3.85 10.93 3.85 1.4 0 5.09-1.28 11.08-3.85 5.99-2.57 10.74-3.74 14.25-3.5 13 .8 23 5.4 30 13.8-11.3 6.8-16.9 16.4-16.8 28.8.1 9.9 3.8 18.2 11.1 24.8 7.3 6.6 16.1 10.1 26.4 10.5 1.5 3.8.5 7.6-3 12.3zm-32.9-106.87c0 8-2.9 15.5-8.7 22.5-6 7.1-13.2 11.3-21.7 12.6-.2-1.7-.3-3.2-.3-4.8 0-7.7 3-15.6 9-23.7 6.1-8.1 13.6-12.7 22.4-13.7.1 1.7.3 3.4.3 5.2z"/>
+        </svg>
+        <span>Apple</span>
+      </span>
+    );
+  }
+  
+  if (b === "samsung") {
+    return (
+      <span className={`inline-flex items-center font-black tracking-wider text-blue-700 dark:text-blue-400 text-[10px] uppercase ${className}`} style={{ fontFamily: "sans-serif" }}>
+        Samsung
+      </span>
+    );
+  }
+  
+  if (b === "oneplus") {
+    return (
+      <span className={`inline-flex items-center bg-red-600 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded tracking-wide ${className}`}>
+        <span className="text-[10px] leading-none mr-0.5 font-black">+</span>1PLUS
+      </span>
+    );
+  }
+  
+  if (b === "google") {
+    return (
+      <span className={`inline-flex items-center font-black tracking-tight text-[10px] ${className}`}>
+        <span className="text-blue-500">G</span>
+        <span className="text-red-500">o</span>
+        <span className="text-yellow-500">o</span>
+        <span className="text-blue-500">g</span>
+        <span className="text-green-500">l</span>
+        <span className="text-red-500">e</span>
+      </span>
+    );
+  }
+  
+  if (b === "xiaomi") {
+    return (
+      <span className={`inline-flex items-center bg-orange-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded-md ${className}`}>
+        mi
+      </span>
+    );
+  }
+  
+  if (b === "nothing") {
+    return (
+      <span className={`inline-flex items-center font-black tracking-[0.2em] uppercase text-[8px] text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 ${className}`}>
+        NTHNG
+      </span>
+    );
+  }
+  
+  if (b === "vivo") {
+    return (
+      <span className={`inline-flex items-center text-blue-600 dark:text-blue-450 font-black italic tracking-tight text-[10px] uppercase ${className}`}>
+        vivo
+      </span>
+    );
+  }
+  
+  if (b === "oppo") {
+    return (
+      <span className={`inline-flex items-center text-emerald-600 dark:text-emerald-500 font-extrabold tracking-widest text-[9px] uppercase ${className}`}>
+        oppo
+      </span>
+    );
+  }
 
+  if (b === "motorola" || b === "moto") {
+    return (
+      <span className={`inline-flex items-center font-bold text-teal-600 dark:text-teal-400 gap-1 ${className}`}>
+        <span className="w-3.5 h-3.5 rounded-full border border-teal-500 flex items-center justify-center font-black text-[8px] bg-teal-50 dark:bg-teal-900/30">M</span>
+        <span>Moto</span>
+      </span>
+    );
+  }
+  
+  if (b === "iqoo") {
+    return (
+      <span className={`inline-flex items-center bg-yellow-400 text-neutral-900 font-black tracking-widest text-[8px] px-1.5 py-0.5 rounded italic border border-yellow-500 ${className}`}>
+        iQOO
+      </span>
+    );
+  }
+  
+  if (b === "poco") {
+    return (
+      <span className={`inline-flex items-center bg-yellow-450 text-neutral-950 font-black tracking-wide text-[8px] px-1.5 py-0.5 rounded border border-neutral-300 ${className}`}>
+        POCO
+      </span>
+    );
+  }
+
+  if (b === "realme") {
+    return (
+      <span className={`inline-flex items-center font-extrabold text-amber-500 tracking-tight text-[10px] gap-0.5 ${className}`}>
+        <span className="text-neutral-900 dark:text-white font-black">r</span>ealme
+      </span>
+    );
+  }
+
+  return (
+    <span className={`inline-flex items-center font-extrabold text-[9px] text-neutral-500 dark:text-neutral-400 uppercase tracking-wider bg-neutral-100 dark:bg-neutral-850 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-800 ${className}`}>
+      {brand}
+    </span>
+  );
+}
 export function SkeletonCard() {
   return (
     <div className="rounded-2xl border border-neutral-100 bg-white p-6 animate-pulse">
@@ -78,7 +191,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
           </div>
           <div className="flex-1 min-w-0 pt-0.5">
             <p className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400 flex items-center gap-1">
-              <span>{phone.brand}</span>
+              <BrandLogo brand={phone.brand} />
               <span>•</span>
               <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold tracking-normal uppercase ${
                 phone.screen_type.includes("AMOLED") || phone.screen_type.includes("OLED")

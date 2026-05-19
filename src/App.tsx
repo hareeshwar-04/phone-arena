@@ -14,6 +14,39 @@ const SHEET_URL = "https://opensheet.elk.sh/1yhvi3qx40ijUz2RyQ7Vojfxx3ZGoyWcaUgT
 type ViewMode = "discover" | "compare";
 type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "os" | "battery" | "newest" | "ram" | "storage";
 
+const PERSONAS = [
+  {
+    name: "Balanced",
+    icon: "⚖️",
+    desc: "Equal priorities for all attributes",
+    weights: { performance: 50, reliability: 50, camera: 50, os: 50 }
+  },
+  {
+    name: "Ultimate Gamer",
+    icon: "🎮",
+    desc: "Speed & charging speed focused",
+    weights: { performance: 100, reliability: 50, camera: 10, os: 10 }
+  },
+  {
+    name: "Content Creator",
+    icon: "📸",
+    desc: "Top-tier camera & media focus",
+    weights: { performance: 50, reliability: 10, camera: 100, os: 50 }
+  },
+  {
+    name: "Road Warrior",
+    icon: "🔋",
+    desc: "Long durability & maximum battery",
+    weights: { performance: 10, reliability: 100, camera: 10, os: 50 }
+  },
+  {
+    name: "Smart Buyer",
+    icon: "💰",
+    desc: "Highest hardware value per rupee",
+    weights: { performance: 50, reliability: 50, camera: 10, os: 100 }
+  }
+];
+
 
 
 const CPU_ANTUTU_MAP: Record<string, number> = {
@@ -385,6 +418,15 @@ export default function App() {
 
   // Persist filters
   useEffect(() => { localStorage.setItem("pa_filters_v2", JSON.stringify(filters)); }, [filters]);
+
+  const activePersona = useMemo(() => {
+    const w = filters.weights;
+    const allEnabled = w.performanceEnabled !== false && w.reliabilityEnabled !== false && w.cameraEnabled !== false && w.osEnabled !== false;
+    if (!allEnabled) return "Custom";
+    return PERSONAS.find(p => 
+      Object.keys(p.weights).every(k => w[k as keyof WeightConfig] === p.weights[k as keyof typeof p.weights])
+    )?.name || "Custom";
+  }, [filters.weights]);
 
   useEffect(() => {
     let cancelled = false;
@@ -928,6 +970,51 @@ export default function App() {
 
             {/* Phone Grid */}
             <div className="flex-1 min-w-0">
+              {/* Persona presets row */}
+              <div className="mb-6 bg-gradient-to-r from-neutral-50 to-neutral-100/50 dark:from-neutral-900 dark:to-neutral-950 p-4 rounded-2xl border border-neutral-250/60 dark:border-neutral-800 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles size={16} className="text-blue-500 animate-pulse" />
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Quick Match Personas</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {PERSONAS.map(p => {
+                    const isActive = activePersona === p.name;
+                    return (
+                      <button
+                        key={p.name}
+                        onClick={() => {
+                          setFilters({
+                            ...filters,
+                            weights: {
+                              ...filters.weights,
+                              ...p.weights,
+                              performanceEnabled: true,
+                              reliabilityEnabled: true,
+                              cameraEnabled: true,
+                              osEnabled: true
+                            }
+                          });
+                        }}
+                        className={`flex flex-col items-start text-left p-3 rounded-xl border transition-all duration-300 relative overflow-hidden ${
+                          isActive 
+                            ? "bg-white dark:bg-neutral-850 border-blue-500 ring-2 ring-blue-500/20 shadow-md translate-y-[-2px]" 
+                            : "bg-white/60 dark:bg-neutral-900/60 border-neutral-200/80 dark:border-neutral-800/80 hover:bg-white dark:hover:bg-neutral-850 hover:border-neutral-300 dark:hover:border-neutral-700"
+                        }`}
+                      >
+                        {isActive && (
+                          <div className="absolute top-0 right-0 w-6 h-6 bg-blue-500 text-white flex items-center justify-center rounded-bl-lg">
+                            <Trophy size={10} />
+                          </div>
+                        )}
+                        <span className="text-lg mb-1">{p.icon}</span>
+                        <span className="text-[11px] font-black text-neutral-800 dark:text-neutral-200">{p.name}</span>
+                        <span className="text-[9px] text-neutral-450 dark:text-neutral-500 mt-0.5 line-clamp-1 leading-normal">{p.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Active filter pills */}
               {activeFilterPills.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-4">

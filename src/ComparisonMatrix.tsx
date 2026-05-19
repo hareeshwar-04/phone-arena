@@ -50,8 +50,56 @@ function getVariantConfig(p: PhoneWithRatings, v: number) {
       addedPrice = p.price_inr > 60000 ? 30000 : 15000;
     }
   }
-  
   return { targetRam, targetStorage, addedPrice };
+}
+
+function calculateUpgradeVerdict(phoneA: PhoneWithRatings, phoneB: PhoneWithRatings) {
+  let current = phoneA;
+  let target = phoneB;
+  
+  if (phoneA.launch_date.localeCompare(phoneB.launch_date) > 0) {
+    current = phoneB;
+    target = phoneA;
+  } else if (phoneA.launch_date === phoneB.launch_date && phoneA.price_inr > phoneB.price_inr) {
+    current = phoneB;
+    target = phoneA;
+  }
+  
+  const perfDelta = target.ratings.performance - current.ratings.performance;
+  const camDelta = target.ratings.camera - current.ratings.camera;
+  const relDelta = target.ratings.reliability - current.ratings.reliability;
+  const osDelta = target.ratings.os - current.ratings.os;
+  
+  const scoreDiff = (perfDelta * 0.4) + (camDelta * 0.3) + (relDelta * 0.15) + (osDelta * 0.15);
+  const upgradePercent = Math.min(100, Math.max(0, Math.round(scoreDiff * 25)));
+  
+  let verdictTitle = "";
+  let verdictDesc = "";
+  let badgeColor = "";
+  let textColor = "";
+  let ringColor = "";
+  
+  if (upgradePercent < 25) {
+    verdictTitle = "Skip Upgrade (Not Recommended)";
+    verdictDesc = `Upgrading from the ${current.name} to the ${target.name} yields a minor ${upgradePercent}% improvement. The differences are minimal in daily usage. Save your money or skip this generation.`;
+    badgeColor = "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/50";
+    textColor = "text-red-650 dark:text-red-450";
+    ringColor = "ring-red-100 dark:ring-red-900/20";
+  } else if (upgradePercent < 55) {
+    verdictTitle = "Incremental Upgrade (Optional)";
+    verdictDesc = `Upgrading to the ${target.name} offers a moderate ${upgradePercent}% boost. You will see decent improvements in camera details and battery efficiency, but everyday speed will feel similar. Only upgrade if you need these specific features.`;
+    badgeColor = "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50";
+    textColor = "text-amber-600 dark:text-amber-450";
+    ringColor = "ring-amber-100 dark:ring-amber-900/20";
+  } else {
+    verdictTitle = "Strong Upgrade (Highly Recommended)";
+    verdictDesc = `Upgrading to the ${target.name} offers a massive ${upgradePercent}% leap. You will experience vastly superior performance, double the camera capabilities, longer software longevity, and faster charging. A very worthwhile switch!`;
+    badgeColor = "bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/50";
+    textColor = "text-green-600 dark:text-green-400";
+    ringColor = "ring-green-100 dark:ring-green-900/20";
+  }
+  
+  return { current, target, upgradePercent, verdictTitle, verdictDesc, badgeColor, textColor, ringColor, perfDelta, camDelta, osDelta };
 }
 
 export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneWithRatings[]; onRemove: (id: string) => void; weights: WeightConfig }) {
@@ -108,6 +156,17 @@ export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneW
         return status.message;
       }
     },
+    { 
+      label: "Software Cost of Ownership", 
+      key: "cost_ownership", 
+      getValue: (p) => {
+        const status = getOSUpdatesStatus(p.launch_date, p.os_updates_years);
+        const years = Math.max(0.5, status.yearsLeft);
+        return p.price_inr / years;
+      },
+      fmt: (v) => `${formatINR(Math.round(v))} / yr`,
+      higherBetter: false
+    },
     { label: "Your Match Score", key: "match", getValue: (p) => calcMatchScore(p, weights), fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Performance Score", key: "g", getValue: (p) => p.ratings.performance, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Reliability", key: "d", getValue: (p) => p.ratings.reliability, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
@@ -134,6 +193,60 @@ export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneW
 
   return (
     <div className="space-y-8">
+      {virtualPhones.length === 2 && (() => {
+        const u = calculateUpgradeVerdict(virtualPhones[0], virtualPhones[1]);
+        return (
+          <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950 p-6 rounded-2xl border border-neutral-250/60 dark:border-neutral-800 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Upgrade Recommendation Engine</span>
+                <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 mt-1">Upgrade Verdict</h3>
+              </div>
+              <div className={`px-4 py-2 rounded-xl border text-xs font-extrabold text-center ${u.badgeColor}`}>
+                {u.verdictTitle}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              {/* Radial Score Indicator */}
+              <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/60 dark:border-neutral-800 shadow-inner">
+                <div className={`w-28 h-28 rounded-full flex flex-col items-center justify-center border-4 ring-8 ${u.ringColor} border-blue-555/80`}>
+                  <span className="text-3xl font-extrabold text-neutral-800 dark:text-neutral-150">{u.upgradePercent}%</span>
+                  <span className="text-[9px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mt-0.5">Upgrade Value</span>
+                </div>
+              </div>
+
+              {/* Explanatory text */}
+              <div className="md:col-span-2 space-y-4">
+                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                  {u.verdictDesc}
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 text-center">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 block mb-1">Performance</span>
+                    <span className={`text-sm font-black ${u.perfDelta >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                      {u.perfDelta >= 0 ? "+" : ""}{u.perfDelta.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 text-center">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 block mb-1">Camera</span>
+                    <span className={`text-sm font-black ${u.camDelta >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                      {u.camDelta >= 0 ? "+" : ""}{u.camDelta.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 text-center">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 block mb-1">OS Support</span>
+                    <span className={`text-sm font-black ${u.osDelta >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                      {u.osDelta >= 0 ? "+" : ""}{u.osDelta.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {verdicts.length > 0 && (
         <div className="rounded bg-blue-50 border border-blue-200 p-5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-blue-800 mb-3 flex items-center gap-2">
