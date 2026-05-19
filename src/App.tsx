@@ -647,31 +647,47 @@ export default function App() {
           </div>
           <div className="flex items-center gap-3">
             {/* Search */}
-            <div className="hidden sm:flex items-center bg-neutral-100 rounded-lg border border-neutral-200 px-3 py-1.5 gap-2 w-48 lg:w-64">
-              <Search size={14} className="text-neutral-400 flex-shrink-0" />
+            <div className="hidden md:flex items-center bg-neutral-50 dark:bg-neutral-850 border border-neutral-200/70 dark:border-neutral-800 rounded-xl px-3 py-1.5 gap-2 w-48 lg:w-64 focus-within:w-56 lg:focus-within:w-72 focus-within:ring-4 focus-within:ring-blue-500/5 focus-within:border-blue-500/50 focus-within:bg-white dark:focus-within:bg-neutral-900 transition-all duration-300 shadow-sm">
+              <Search size={13} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
               <input
-                type="text" placeholder="Search phones..."
+                type="text" placeholder="Search smartphones..."
                 value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-sm text-neutral-700 outline-none w-full placeholder:text-neutral-400"
+                className="bg-transparent text-xs text-neutral-800 dark:text-neutral-250 outline-none w-full placeholder:text-neutral-400 font-semibold"
               />
-              {searchQuery && <button onClick={() => setSearchQuery("")} className="text-neutral-400 hover:text-neutral-600"><X size={14} /></button>}
+              {searchQuery ? (
+                <button onClick={() => setSearchQuery("")} className="text-neutral-400 hover:text-neutral-600"><X size={12} /></button>
+              ) : (
+                <span className="text-[8px] font-black text-neutral-400 dark:text-neutral-500 border border-neutral-200 dark:border-neutral-700/60 rounded px-1.5 py-0.5 select-none tracking-widest bg-neutral-100/50 dark:bg-neutral-800/40">⌘K</span>
+              )}
             </div>
+
             {/* View Tabs */}
-            <div className="hidden sm:flex items-center rounded bg-neutral-100 p-1 border border-neutral-200">
-              <button onClick={() => setView("discover")} className={`px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${view === "discover" ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" : "text-neutral-500 hover:text-neutral-700"}`}>
-                <span className="flex items-center gap-2"><Search size={14} /> Browse</span>
+            <div className="hidden sm:flex items-center rounded-xl bg-neutral-50 dark:bg-neutral-850 p-1 border border-neutral-200/70 dark:border-neutral-800 shadow-sm">
+              <button 
+                onClick={() => setView("discover")} 
+                className={`px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                  view === "discover" 
+                    ? "bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm border border-neutral-200/40 dark:border-neutral-700/40" 
+                    : "text-neutral-500 dark:text-neutral-450 hover:text-neutral-800 dark:hover:text-neutral-200"
+                }`}
+              >
+                <span className="flex items-center gap-1.5"><Search size={13} /> Browse</span>
               </button>
               <div className="relative">
                 <button 
                   onClick={() => setView("compare")} 
-                  className={`relative px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-all duration-300 ${
+                  className={`relative px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-300 ${
                     view === "compare" 
-                      ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" 
-                      : "text-neutral-500 hover:text-neutral-700"
-                  } ${highlightCompare ? "animate-wiggle border-blue-500 ring-2 ring-blue-500/70 bg-blue-50 text-blue-700 font-extrabold shadow" : ""}`}
+                      ? "bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm border border-neutral-200/40 dark:border-neutral-700/40" 
+                      : "text-neutral-500 dark:text-neutral-450 hover:text-neutral-800 dark:hover:text-neutral-200"
+                  } ${highlightCompare ? "animate-wiggle border-blue-500 ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow" : ""}`}
                 >
-                  <span className="flex items-center gap-2"><Layers size={14} /> Compare</span>
-                  {comparedIds.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
+                  <span className="flex items-center gap-1.5"><Layers size={13} /> Compare</span>
+                  {comparedIds.length > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-blue-600 text-[8px] font-black text-white flex items-center justify-center border border-white dark:border-neutral-800 shadow-sm">
+                      {comparedIds.length}
+                    </span>
+                  )}
                 </button>
 
                 {showComparePopup && (
@@ -692,6 +708,15 @@ export default function App() {
                 )}
               </div>
             </div>
+
+            {/* Spec Guide Trigger (Desktop) */}
+            <button 
+              onClick={() => setShowSpecGuide(true)}
+              className="hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-100 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 hover:from-blue-100 dark:hover:from-blue-900/30 hover:to-indigo-100 dark:hover:to-indigo-900/30 transition-all duration-200 text-xs font-extrabold uppercase tracking-wider shadow-sm"
+            >
+              <BookOpen size={13} className="text-blue-600 dark:text-blue-400" />
+              <span>Specs Guide</span>
+            </button>
             {/* Mobile tabs */}
             <div className="flex sm:hidden items-center gap-1.5 relative">
               <button 
