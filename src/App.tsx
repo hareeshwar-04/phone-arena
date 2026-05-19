@@ -9,6 +9,7 @@ import { ComparisonMatrix } from "./ComparisonMatrix";
 import { PhoneDetail } from "./PhoneDetail";
 import { OnboardingWizard } from "./OnboardingWizard";
 import { SpecGuideModal } from "./SpecGuideModal";
+import { LegalModal } from "./LegalModal";
 
 const SHEET_URL = "https://opensheet.elk.sh/1yhvi3qx40ijUz2RyQ7Vojfxx3ZGoyWcaUgTisWfOGmM/Sheet1";
 type ViewMode = "discover" | "compare";
@@ -351,6 +352,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("pa_wizard_done"));
   const [showSpecGuide, setShowSpecGuide] = useState(false);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<"terms" | "privacy" | "affiliate">("terms");
   const [showTooltip, setShowTooltip] = useState(() => !localStorage.getItem("pa_spec_tooltip_v3"));
   const [showWizardTooltip, setShowWizardTooltip] = useState(() => !localStorage.getItem("pa_wizard_tooltip_v3"));
   const [theme, setTheme] = useState<"light" | "dark">(() => (localStorage.getItem("pa_theme") as "light" | "dark") || "light");
@@ -1172,15 +1175,31 @@ export default function App() {
             </div>
             <div className="pt-4 border-t border-neutral-800/60 text-[9px] text-neutral-500 flex flex-wrap gap-x-6 gap-y-2">
               <span>Not affiliated with PhoneArena.com or any foreign entities.</span>
-              <a href="#" className="hover:text-blue-400 transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-blue-400 transition-colors">Affiliate Disclosure</a>
+              <button 
+                onClick={() => { setLegalModalTab("terms"); setLegalModalOpen(true); }}
+                className="hover:text-blue-400 transition-colors bg-transparent border-0 cursor-pointer p-0 font-medium"
+              >
+                Terms of Service
+              </button>
+              <button 
+                onClick={() => { setLegalModalTab("privacy"); setLegalModalOpen(true); }}
+                className="hover:text-blue-400 transition-colors bg-transparent border-0 cursor-pointer p-0 font-medium"
+              >
+                Privacy Policy
+              </button>
+              <button 
+                onClick={() => { setLegalModalTab("affiliate"); setLegalModalOpen(true); }}
+                className="hover:text-blue-400 transition-colors bg-transparent border-0 cursor-pointer p-0 font-medium"
+              >
+                Affiliate Disclosure
+              </button>
             </div>
           </div>
         </div>
       </footer>
 
       <SpecGuideModal isOpen={showSpecGuide} onClose={() => setShowSpecGuide(false)} />
+      <LegalModal isOpen={legalModalOpen} onClose={() => setLegalModalOpen(false)} initialTab={legalModalTab} />
     </div>
   );
 }
