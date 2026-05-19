@@ -31,7 +31,7 @@ export function PhoneDetail({ phone, onClose }: Props) {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left Column - Image & Price */}
             <div className="w-full md:w-1/3 flex-shrink-0 flex flex-col items-center">
-              <div className="w-48 sm:w-64 md:w-full aspect-[3/4] bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm mb-6 relative flex items-center justify-center p-4">
+              <div className="w-48 sm:w-64 md:w-full aspect-[3/4] image-container-bg rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm mb-6 relative flex items-center justify-center p-4">
                 <img src={phone.image_url} alt={phone.name} className="max-w-full max-h-full object-contain" />
               </div>
               

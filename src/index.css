@@ -346,4 +346,12 @@ input[type="range"]::-moz-range-thumb {
   background-image: linear-gradient(to right, #090d16, #121824) !important;
 }
 
+/* Image Container Backgrounds */
+.image-container-bg {
+  background-color: #ffffff !important; /* Premium light white background */
+}
+.dark .image-container-bg {
+  background-color: #000000 !important; /* Pure black in dark theme */
+}
+
 

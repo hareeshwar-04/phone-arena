@@ -79,7 +79,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
 
         {/* Product Details Header */}
         <div className="flex items-start gap-4 mb-4 border-b border-neutral-100 pb-4">
-          <div className="w-16 h-20 bg-white dark:bg-neutral-800 flex items-center justify-center flex-shrink-0 rounded-xl p-1 border border-neutral-100 dark:border-neutral-700">
+          <div className="w-16 h-20 image-container-bg flex items-center justify-center flex-shrink-0 rounded-xl p-1 border border-neutral-100 dark:border-neutral-700">
             <img 
               src={phone.image_url} 
               alt={phone.name} 
