@@ -63,7 +63,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
           </div>
           <div className="flex-1 min-w-0 pt-1">
             <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">{phone.brand}</p>
-            <h3 className="text-base font-bold text-neutral-900 tracking-tight truncate mt-0.5">{phone.name}</h3>
+            <h3 className="text-base font-bold text-neutral-900 tracking-tight leading-tight mt-0.5">{phone.name}</h3>
             <p className="text-lg font-extrabold text-blue-600 mt-1">{formatINR(phone.price_inr)}</p>
           </div>
         </div>
