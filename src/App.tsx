@@ -45,6 +45,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("pa_wizard_done"));
   const [showSpecGuide, setShowSpecGuide] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(() => !localStorage.getItem("pa_spec_tooltip_done"));
   const [filters, setFilters] = useState<FilterConfig>(() => {
     const saved = localStorage.getItem("pa_filters_v2");
     if (!saved) return { ...DEFAULT_FILTERS };
@@ -235,8 +236,30 @@ export default function App() {
               </button>
             </div>
             {/* Mobile tabs */}
-            <div className="flex sm:hidden items-center gap-1.5">
-              <button onClick={() => setShowSpecGuide(true)} className="p-2 rounded text-neutral-500 hover:bg-neutral-100 transition-colors" title="Spec Guide"><BookOpen size={18} /></button>
+            <div className="flex sm:hidden items-center gap-1.5 relative">
+              <button 
+                onClick={() => { setShowSpecGuide(true); setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                className="p-2 rounded text-neutral-500 hover:bg-neutral-100 transition-colors" 
+                title="Spec Guide"
+              >
+                <BookOpen size={18} />
+              </button>
+              {showTooltip && (
+                <div className="absolute top-full mt-2.5 left-0 w-52 bg-neutral-900 text-white rounded-xl p-2.5 shadow-xl z-50 border border-neutral-800 animate-float-subtle">
+                  <div className="absolute bottom-full left-3 w-2.5 h-2.5 bg-neutral-900 rotate-45 border-l border-t border-neutral-800 transform translate-y-1.5" />
+                  <div className="flex items-start justify-between gap-1.5">
+                    <p className="text-[10px] font-semibold leading-relaxed">
+                      New to tech? Prefer reading this first! 📖
+                    </p>
+                    <button 
+                      onClick={() => { setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                      className="text-neutral-400 hover:text-white flex-shrink-0"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                </div>
+              )}
               <button onClick={() => setView("discover")} className={`p-2 rounded transition-colors ${view === "discover" ? "bg-blue-50 text-blue-600" : "text-neutral-500"}`}><Search size={18} /></button>
               <button onClick={() => setView("compare")} className={`relative p-2 rounded transition-colors ${view === "compare" ? "bg-blue-50 text-blue-600" : "text-neutral-500"}`}>
                 <Layers size={18} />
@@ -247,9 +270,31 @@ export default function App() {
               <SlidersHorizontal size={20} />
             </button>
             {/* Spec Guide */}
-            <button onClick={() => setShowSpecGuide(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors" title="Learn what smartphone specs mean">
-              <BookOpen size={14} className="text-neutral-500" /> Spec Guide
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => { setShowSpecGuide(true); setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors" 
+                title="Learn what smartphone specs mean"
+              >
+                <BookOpen size={14} className="text-neutral-500" /> Spec Guide
+              </button>
+              {showTooltip && (
+                <div className="absolute top-full mt-2.5 right-0 w-64 bg-neutral-900 text-white rounded-xl p-3 shadow-xl z-50 border border-neutral-800 animate-float-subtle">
+                  <div className="absolute bottom-full right-6 w-3 h-3 bg-neutral-900 rotate-45 border-l border-t border-neutral-800 transform translate-y-1.5" />
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[11px] font-semibold leading-relaxed">
+                      New to tech? We highly recommend reading this spec guide first! 📖
+                    </p>
+                    <button 
+                      onClick={() => { setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                      className="text-neutral-400 hover:text-white flex-shrink-0 mt-0.5"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Re-open wizard */}
             <button onClick={() => setShowWizard(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200/50 text-xs font-semibold text-blue-700 hover:from-blue-100 hover:to-violet-100 transition-colors" title="Re-run phone finder wizard">
               <Sparkles size={14} /> Find My Phone

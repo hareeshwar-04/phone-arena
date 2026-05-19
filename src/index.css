@@ -82,3 +82,11 @@ input[type="range"]::-moz-range-thumb {
   animation: fadeInUp 0.3s ease-out both;
 }
 
+@keyframes floatSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float-subtle {
+  animation: floatSubtle 2s ease-in-out infinite;
+}
+
