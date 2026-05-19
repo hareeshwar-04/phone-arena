@@ -105,12 +105,15 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
           <span className="text-base font-extrabold text-blue-700">{customScore.toFixed(1)}</span>
         </div>
         
-        <div className="flex items-center gap-2">
-          <button onClick={(e) => { e.stopPropagation(); onToggle(phone.id); }} className={`flex-1 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 ${isCompared ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 border border-neutral-200/50"}`}>
-            {isCompared ? <><X size={14} /> Remove</> : <><Plus size={14} /> Compare</>}
+        <div className="flex items-center gap-1.5">
+          <button onClick={(e) => { e.stopPropagation(); onToggle(phone.id); }} className={`flex-[2] py-2.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1 ${isCompared ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 border border-neutral-200/50"}`}>
+            {isCompared ? <><X size={12} /> Remove</> : <><Plus size={12} /> Compare</>}
           </button>
-          <a href={`https://www.amazon.in/s?k=${encodeURIComponent(phone.name)}&tag=YOUR_AMAZON_AFFILIATE_ID_HERE`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex-1 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
-            <ShoppingCart size={14} /> Buy Now
+          <a href={`https://www.amazon.in/s?k=${encodeURIComponent(phone.name)}&tag=YOUR_AMAZON_AFFILIATE_ID_HERE`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex-1 py-2.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200/60" title="Buy on Amazon">
+            Amazon
+          </a>
+          <a href={`https://www.flipkart.com/search?q=${encodeURIComponent(phone.name)}&affid=YOUR_FLIPKART_AFFILIATE_ID_HERE`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex-1 py-2.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/60" title="Buy on Flipkart">
+            Flipkart
           </a>
         </div>
       </div>
