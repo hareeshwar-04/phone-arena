@@ -1,7 +1,7 @@
-import { X, ExternalLink, Cpu, Battery, Camera, Monitor, Shield, Smartphone, Zap, Star, ShoppingCart } from "lucide-react";
+import { X, ExternalLink, Cpu, Battery, Camera, Monitor, Shield, Smartphone, Zap, Star, ShoppingCart, AlertTriangle, Calendar } from "lucide-react";
 import type { PhoneWithRatings } from "./types";
 import { formatINR } from "./types";
-import { getProsAndCons } from "./hooks";
+import { getProsAndCons, getOSUpdatesStatus } from "./hooks";
 
 interface Props {
   phone: PhoneWithRatings;
@@ -10,6 +10,8 @@ interface Props {
 
 export function PhoneDetail({ phone, onClose }: Props) {
   const { pros, cons } = getProsAndCons(phone);
+  const osStatus = getOSUpdatesStatus(phone.launch_date, phone.os_updates_years);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 md:p-6 bg-neutral-900/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="bg-white sm:rounded-xl shadow-2xl w-full h-[95dvh] sm:h-auto max-w-3xl sm:max-h-[90vh] overflow-hidden flex flex-col animate-fade-in-up rounded-t-2xl" onClick={e => e.stopPropagation()}>
@@ -48,12 +50,10 @@ export function PhoneDetail({ phone, onClose }: Props) {
                     className="flex items-center justify-between p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-orange-50 hover:border-orange-200 transition-colors group"
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-white border border-neutral-200 p-0.5 flex items-center justify-center">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" className="max-w-full max-h-full object-contain" />
-                      </div>
-                      <span className="text-xs font-bold text-neutral-700 group-hover:text-orange-700">Amazon</span>
+                      <ExternalLink size={14} className="text-neutral-400 group-hover:text-orange-500 transition-colors" />
+                      <span className="text-xs font-bold text-neutral-700 group-hover:text-orange-950 transition-colors">Amazon India</span>
                     </div>
-                    <ExternalLink size={14} className="text-neutral-400 group-hover:text-orange-500" />
+                    <span className="text-[10px] font-bold text-neutral-400 bg-neutral-200/50 group-hover:bg-orange-200/30 group-hover:text-orange-700 px-1.5 py-0.5 rounded transition-all">Check price</span>
                   </a>
 
                   <a 
@@ -63,20 +63,27 @@ export function PhoneDetail({ phone, onClose }: Props) {
                     className="flex items-center justify-between p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-blue-50 hover:border-blue-200 transition-colors group"
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-white border border-neutral-200 p-0.5 flex items-center justify-center">
-                        <img src="https://static-assets-web.flixcart.com/batman-returns/batman-returns/p/images/fkheaderlogo_exploreplus-44005d.svg" alt="Flipkart" className="max-w-full max-h-full object-contain" />
-                      </div>
-                      <span className="text-xs font-bold text-neutral-700 group-hover:text-blue-700">Flipkart</span>
+                      <ExternalLink size={14} className="text-neutral-400 group-hover:text-blue-500 transition-colors" />
+                      <span className="text-xs font-bold text-neutral-700 group-hover:text-blue-950 transition-colors">Flipkart</span>
                     </div>
-                    <ExternalLink size={14} className="text-neutral-400 group-hover:text-blue-500" />
+                    <span className="text-[10px] font-bold text-neutral-400 bg-neutral-200/50 group-hover:bg-blue-200/30 group-hover:text-blue-700 px-1.5 py-0.5 rounded transition-all">Check price</span>
                   </a>
                 </div>
-
               </div>
             </div>
             
             {/* Right Column - Specs */}
             <div className="flex-1">
+              {osStatus.warningText && (
+                <div className={`mb-5 flex items-start gap-2.5 p-3 rounded-lg border text-xs font-semibold ${osStatus.yearsLeft === 0 ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-300 text-amber-800 animate-pulse"}`}>
+                  <AlertTriangle size={15} className="flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-extrabold text-[13px]">{osStatus.yearsLeft === 0 ? "EOL (End of Life) Alert" : "OS Support Warning"}</p>
+                    <p className="mt-0.5 text-neutral-600 font-medium">{osStatus.warningText}</p>
+                  </div>
+                </div>
+              )}
+
               <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-800 mb-4 pb-2 border-b border-neutral-200">Technical Specifications</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-6">
                 <SpecItem icon={<Cpu size={18} />} label="Processor" value={phone.cpu_name} subValue={`${(phone.raw_cpu_score).toFixed(1)}/10 Power Rating`} />
@@ -84,7 +91,7 @@ export function PhoneDetail({ phone, onClose }: Props) {
                 <SpecItem icon={<Battery size={18} />} label="Battery" value={`${phone.battery_mah} mAh`} subValue={`${phone.charging_w}W Fast Charging`} />
                 <SpecItem icon={<Camera size={18} />} label="Cameras" value={`${phone.main_camera_score.toFixed(1)}/10 Main`} subValue={`${phone.front_camera_score.toFixed(1)}/10 Selfie`} />
                 <SpecItem icon={<Smartphone size={18} />} label="Memory Type" value={phone.storage_type} subValue={`${phone.ram_type} RAM`} />
-                <SpecItem icon={<Shield size={18} />} label="Durability" value={`${phone.os_updates_years} Years OS Updates`} subValue={`${phone.build_quality_score.toFixed(1)}/10 Build Quality`} />
+                <SpecItem icon={<Shield size={18} />} label="Durability & OS" value={`${phone.os_updates_years} Years OS Updates`} subValue={`${osStatus.message} (Launch: ${phone.launch_date})`} />
               </div>
 
               <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-800 mt-8 mb-4 pb-2 border-b border-neutral-200">Computed Persona Ratings</h3>

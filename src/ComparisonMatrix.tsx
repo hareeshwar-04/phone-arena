@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone } from "lucide-react";
 import type { PhoneWithRatings } from "./types";
 import { formatINR } from "./types";
-import { useVerdict } from "./hooks";
+import { useVerdict, getOSUpdatesStatus } from "./hooks";
 
 export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRatings[]; onRemove: (id: string) => void }) {
   const [variants, setVariants] = useState<Record<string, number>>({});
@@ -53,6 +53,15 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
     { label: "Selfie Camera", key: "sel", getValue: (p) => p.front_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "Build Quality", key: "bld", getValue: (p) => p.build_quality_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "OS Updates", key: "upd", getValue: (p) => p.os_updates_years, fmt: (v) => `${v} yrs`, higherBetter: true },
+    { label: "Launch Date", key: "launch", getValue: (p) => p.launch_date },
+    { 
+      label: "Updates Remaining", 
+      key: "upd_left", 
+      getValue: (p) => {
+        const status = getOSUpdatesStatus(p.launch_date, p.os_updates_years);
+        return status.message;
+      }
+    },
     { label: "Performance Score", key: "g", getValue: (p) => p.ratings.performance, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Reliability", key: "d", getValue: (p) => p.ratings.reliability, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Camera Score", key: "c", getValue: (p) => p.ratings.camera, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
@@ -116,14 +125,17 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
             <tbody>
               {rows.map((row) => {
                 const vals = virtualPhones.map((p) => row.getValue(p));
-                const best = row.higherBetter ? Math.max(...(vals as number[])) : Math.min(...(vals as number[]));
+                const isNumeric = vals.every(v => typeof v === 'number');
+                const best = (row.higherBetter !== undefined && isNumeric)
+                  ? (row.higherBetter ? Math.max(...(vals as number[])) : Math.min(...(vals as number[])))
+                  : null;
                 
                 return (
                   <tr key={row.key} className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
                     <td className="sticky left-0 z-10 bg-white px-2 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-xs font-semibold text-neutral-600 border-r border-neutral-200">{row.label}</td>
                     {virtualPhones.map((p, idx) => {
                       const v = vals[idx];
-                      const isWin = v === best && virtualPhones.length > 1;
+                      const isWin = best !== null && v === best && virtualPhones.length > 1;
                       const display = row.fmt ? row.fmt(v) : v.toString();
                       
                       return (

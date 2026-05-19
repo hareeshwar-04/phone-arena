@@ -26,6 +26,59 @@ function scaleLog(value: number, lo: number, hi: number): number {
   return 1 + ((clamped - lo) / (hi - lo)) * 9;
 }
 
+export interface OSUpdatesStatus {
+  yearsLeft: number;
+  message: string;
+  badgeClass: string;
+  warningText?: string;
+}
+
+export function getOSUpdatesStatus(launchDateStr: string, osUpdatesYears: number): OSUpdatesStatus {
+  if (!launchDateStr || osUpdatesYears <= 0) {
+    return {
+      yearsLeft: 0,
+      message: "Updates: N/A",
+      badgeClass: "bg-neutral-50 text-neutral-400 border-neutral-250/60"
+    };
+  }
+
+  const parts = launchDateStr.split("-");
+  const launchYear = parseInt(parts[0], 10);
+  const launchMonth = parts[1] ? parseInt(parts[1], 10) - 1 : 0;
+  
+  const launchDate = new Date(launchYear, launchMonth, 1);
+  const currentDate = new Date(); // May 2026
+  
+  const diffMs = currentDate.getTime() - launchDate.getTime();
+  const ageYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+  
+  const yearsLeft = Math.max(0, osUpdatesYears - ageYears);
+  
+  let message = "";
+  let badgeClass = "";
+  let warningText = undefined;
+  
+  if (yearsLeft <= 0) {
+    message = "No OS updates left (EOL)";
+    badgeClass = "bg-red-50 text-red-600 border-red-200/80";
+    warningText = "End of Life: Software updates have ended.";
+  } else if (yearsLeft <= 1.25) {
+    message = "Only 1 year left!";
+    badgeClass = "bg-amber-50 text-amber-700 border-amber-300 animate-pulse font-bold";
+    warningText = "Warning: Software support ends within 1 year!";
+  } else {
+    message = `${Math.ceil(yearsLeft)} OS updates remaining`;
+    badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+  }
+  
+  return {
+    yearsLeft: Math.round(yearsLeft * 10) / 10,
+    message,
+    badgeClass,
+    warningText
+  };
+}
+
 // ── 1. PERFORMANCE SCORE ───────────────────────────────────────
 // AnTuTu is the most objective cross-chip benchmark.
 // Weighting: raw AnTuTu (60%) + refresh rate (20%) + fast charge (12%) + RAM tier (8%)

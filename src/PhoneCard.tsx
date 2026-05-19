@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monitor, ExternalLink, ShoppingCart, Smartphone } from "lucide-react";
+import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monitor, ExternalLink, ShoppingCart, Smartphone, Calendar } from "lucide-react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
+import { getOSUpdatesStatus } from "./hooks";
 
 export function SkeletonCard() {
   return (
@@ -45,6 +46,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
     (weights.osEnabled ? phone.ratings.os * weights.os : 0)
   ) / total) * 10) / 10;
   const hasBloat = phone.raw_ui_score < 6.0;
+  const osStatus = getOSUpdatesStatus(phone.launch_date, phone.os_updates_years);
 
   return (
     <div className={`relative group rounded border bg-white transition-shadow duration-200 hover:shadow-md animate-fade-in-up cursor-pointer ${isCompared ? "border-blue-500 shadow-sm" : "border-neutral-200"}`} onClick={onSelect}>
@@ -101,6 +103,18 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
             <Monitor size={13} className="text-neutral-400" /> <span>{phone.display_refresh_hz}Hz {phone.screen_type}</span>
             <span className="text-neutral-300">•</span>
             <Battery size={13} className="text-neutral-400" /> <span>{phone.battery_mah}mAh</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar size={13} className="text-neutral-400" />
+            <span className={
+              osStatus.yearsLeft === 0 
+                ? "text-[10px] font-bold bg-red-50 text-red-650 px-1.5 py-0.5 rounded border border-red-150" 
+                : osStatus.yearsLeft <= 1.25 
+                  ? "text-[10px] font-bold bg-amber-50 text-amber-750 px-1.5 py-0.5 rounded border border-amber-250 animate-pulse" 
+                  : "text-neutral-500 text-[11px]"
+            }>
+              {osStatus.yearsLeft === 0 ? "EOL: No updates left" : osStatus.yearsLeft <= 1.25 ? "Warning: Only 1 year of updates left!" : `${Math.ceil(osStatus.yearsLeft)} OS updates left`}
+            </span>
           </div>
         </div>
         
