@@ -271,48 +271,10 @@ def estimate_launch_date(cpu_name: str) -> str:
         return "2022-08"
     return "2024-09"
 
-def fetch_launch_date_from_ddg(phone_name: str) -> str:
-    import urllib.parse
-    query = f"{phone_name} release date gsmarena"
-    url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
-    req = urllib.request.Request(
-        url, 
-        headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            html = response.read().decode('utf-8', errors='ignore')
-            soup = BeautifulSoup(html, "html.parser")
-            snippets = [r.get_text() for r in soup.select(".result__snippet")]
-            
-            months_pattern = "january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec"
-            patterns = [
-                rf"\b({months_pattern})\b\s+\d{{1,2}},\s+(202\d)\b", # Month DD, YYYY
-                rf"\b\d{{1,2}}\s+({months_pattern})\s+(202\d)\b",   # DD Month YYYY
-                rf"\b({months_pattern})\s+(202\d)\b",               # Month YYYY
-                r"\b(202\d)[-/]\d{2}[-/]\d{2}\b"                     # YYYY-MM-DD
-            ]
-            
-            for snippet in snippets:
-                for pat in patterns:
-                    m = re.search(pat, snippet, re.IGNORECASE)
-                    if m:
-                        found_str = m.group(0)
-                        parsed = parse_release_date_to_yyyy_mm(found_str)
-                        if parsed:
-                            return parsed
-    except Exception as e:
-        logger.warning(f"DuckDuckGo search launch date failed for {phone_name}: {e}")
-    return ""
 
-
-def scrape_live_phones(limit=1500, existing_data=None) -> list[dict]:
-    if existing_data is None:
-        existing_data = {}
+def scrape_live_phones(limit=1500) -> list[dict]:
     phones = []
-    brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno", "lava", "hmd", "asus", "honor"]
+    brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno"]
     
     for brand in brands:
         if len(phones) >= limit: break
@@ -334,145 +296,123 @@ def scrape_live_phones(limit=1500, existing_data=None) -> list[dict]:
                 logger.info(f"No more cards found for {brand} on page {page}. Moving to next brand.")
                 break
             
-            for card in cards:
-                if len(phones) >= limit: break
-                
-                # Exclude unreleased/rumored phones
-                card_text = card.get_text(strip=True).lower()
-                if "upcoming" in card_text or "expected" in card_text or "rumored" in card_text:
-                    continue
-                    
-                name_el = card.select_one("h2")
-                if not name_el: continue
-                name = name_el.get_text(strip=True)
-                price_el = card.select_one(".price")
-                price = parse_number(price_el.get_text(strip=True)) if price_el else 0
-                if price < 5000: price = 15000
-                
-                img_el = card.select_one("img.sm-img")
-                img_url = img_el.get("src", "") if img_el else "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=600&fit=crop&q=80"
-                if img_url and img_url.startswith("/"): img_url = "https://www.smartprix.com" + img_url
-                
-                specs = card.select("ul.sm-feat.specs li")
-                
-                cpu_name = "Unknown"
-                battery_mah = 5000
-                charging_w = 33
-                refresh_hz = 120
-                main_mp = 50
-                front_mp = 16
-                screen_type = "Unknown"
-                variant_str = ""
-                
-                for li in specs:
-                    t = li.get_text(strip=True).lower()
-                    if "ram" in t:
-                        ram_m = re.search(r'(\d+)\s*(gb|tb)\s*ram', t)
-                        rom_m = re.search(r'(\d+)\s*(gb|tb)\s*(inbuilt|rom|storage)', t)
-                        if ram_m and rom_m:
-                            variant_str = f" ({ram_m.group(1)}{ram_m.group(2).upper()}/{rom_m.group(1)}{rom_m.group(2).upper()})"
-                    
-                    if "processor" in t or "core" in t or "bionic" in t or "tensor" in t or "snapdragon" in t or "dimensity" in t:
-                        # Flawless extraction: Strip spaces and punctuation to defeat Smartprix typos
-                        t_clean = t.replace(" ", "").replace("+", "plus").replace("-", "")
-                        for k in CPU_ANTUTU.keys():
-                            k_clean = k.lower().replace(" ", "").replace("+", "plus").replace("-", "")
-                            if k_clean in t_clean:
-                                cpu_name = k
-                                break
-                        if cpu_name == "Unknown":
-                            cpu_name = t.split(",")[0].title()
-                    if "mah" in t:
-                        bm = re.search(r'(\d{3,5})\s*mah', t)
-                        if bm: battery_mah = int(bm.group(1))
-                        cm = re.search(r'(\d{1,3})\s*w', t)
-                        if cm: charging_w = int(cm.group(1))
-                    if "display" in t or "inches" in t:
-                        rm = re.search(r'(\d{2,3})\s*hz', t)
-                        if rm: refresh_hz = int(rm.group(1))
-                        
-                        if "amoled" in t: screen_type = "AMOLED"
-                        elif "poled" in t or "p-oled" in t: screen_type = "P-OLED"
-                        elif "oled" in t: screen_type = "OLED"
-                        elif "lcd" in t or "ips" in t: screen_type = "IPS LCD"
-                        
-                    if "camera" in t:
-                        if "front" in t:
-                            parts = t.split("&")
-                            rear_t, front_t = (parts[0], parts[1]) if len(parts) == 2 else (t, "")
-                            rm = re.search(r'(\d{1,3})\s*mp', rear_t)
-                            if rm: main_mp = int(rm.group(1))
-                            fm = re.search(r'(\d{1,3})\s*mp', front_t)
-                            if fm: front_mp = int(fm.group(1))
-                        else:
-                            rm = re.search(r'(\d{1,3})\s*mp', t)
-                            if rm: main_mp = int(rm.group(1))
-                
-                # Clean up name and append variant (e.g. 8GB/256GB)
-                name_clean = re.sub(r'\(\s*\d+\s*(?:gb|tb).*?\)', '', name, flags=re.IGNORECASE).strip()
-                # Also clean names like "OnePlus 12 5G 16GB RAM"
-                name_clean = re.sub(r'\d+\s*(?:gb|tb)\s*ram.*', '', name_clean, flags=re.IGNORECASE).strip()
-                if variant_str:
-                    name_clean += variant_str
-                name = name_clean
-                
-                # Fetch detail page to get actual launch/release date and OS updates policy
-                link_el = card.select_one("a")
-                relative_link = link_el.get("href") if link_el else ""
-                launch_date = ""
-                os_updates_years = None
-                charging_mins = parse_charging_time(charging_w, battery_mah)
-                
-                phone_id = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
-                
-                # Try Cache first
-                if phone_id in existing_data:
-                    cached = existing_data[phone_id]
-                    c_date = cached.get("launch_date")
-                    if c_date and re.match(r'^\d{4}-\d{2}$', str(c_date)):
-                        launch_date = str(c_date)
-                        os_updates_years = cached.get("os_updates_years")
-                        logger.info(f"Cache hit for {name}: launch_date={launch_date}, updates={os_updates_years}")
-                
-                # If cache miss or invalid format, fetch dynamically
-                if not launch_date:
-                    # A. Try DuckDuckGo / Search (highly reliable & rarely blocked)
-                    logger.info(f"Cache miss: Searching DuckDuckGo for {name} launch date...")
-                    launch_date = fetch_launch_date_from_ddg(name)
-                    
-                    # B. If search is empty, fallback to Smartprix detail page
-                    if not launch_date and relative_link:
-                        detail_url = relative_link if relative_link.startswith("http") else "https://www.smartprix.com" + relative_link
-                        logger.info(f"DDG empty: Fetching Smartprix detail page for {name} from {detail_url}...")
-                        launch_date, sp_updates = extract_from_detail_page(detail_url)
-                        if sp_updates is not None:
-                            os_updates_years = sp_updates
-                        time.sleep(0.5) # Throttling for safety
-                        
-                    # C. Fallback: Chipset estimation
-                    if not launch_date:
-                        launch_date = estimate_launch_date(cpu_name)
-                        logger.info(f"Fallback: Estimated launch date for {name} as {launch_date}")
-                            
-                phones.append({
-                    "id": phone_id,
-                    "brand": (name.split()[0] if name else "Unknown").replace("Oppo", "OPPO").replace("oppo", "OPPO").replace("Iqoo", "iQOO").replace("iqoo", "iQOO").replace("Poco", "POCO").replace("poco", "POCO"),
-                    "name": name,
-                    "price_inr": price,
-                    "image_url": img_url,
-                    "launch_date": launch_date,
-                    "os_updates_years": os_updates_years,
-                    "charging_mins": charging_mins,
-                    "cpu_name": cpu_name,
-                    "battery_mah": battery_mah,
-                    "charging_w": charging_w,
-                    "display_refresh_hz": refresh_hz,
-                    "screen_type": screen_type,
-                    "main_camera_mp": main_mp,
-                    "front_camera_mp": front_mp,
-                })
-            time.sleep(0.5)
+        for card in cards:
+            if len(phones) >= limit: break
             
+            # Exclude unreleased/rumored phones
+            card_text = card.get_text(strip=True).lower()
+            if "upcoming" in card_text or "expected" in card_text or "rumored" in card_text:
+                continue
+                
+            name_el = card.select_one("h2")
+            if not name_el: continue
+            name = name_el.get_text(strip=True)
+            price_el = card.select_one(".price")
+            price = parse_number(price_el.get_text(strip=True)) if price_el else 0
+            if price < 5000: price = 15000
+            
+            img_el = card.select_one("img.sm-img")
+            img_url = img_el.get("src", "") if img_el else "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=600&fit=crop&q=80"
+            if img_url and img_url.startswith("/"): img_url = "https://www.smartprix.com" + img_url
+            
+            specs = card.select("ul.sm-feat.specs li")
+            
+            cpu_name = "Unknown"
+            battery_mah = 5000
+            charging_w = 33
+            refresh_hz = 120
+            main_mp = 50
+            front_mp = 16
+            screen_type = "Unknown"
+            variant_str = ""
+            
+            for li in specs:
+                t = li.get_text(strip=True).lower()
+                if "ram" in t:
+                    ram_m = re.search(r'(\d+)\s*(gb|tb)\s*ram', t)
+                    rom_m = re.search(r'(\d+)\s*(gb|tb)\s*(inbuilt|rom|storage)', t)
+                    if ram_m and rom_m:
+                        variant_str = f" ({ram_m.group(1)}{ram_m.group(2).upper()}/{rom_m.group(1)}{rom_m.group(2).upper()})"
+                
+                if "processor" in t or "core" in t or "bionic" in t or "tensor" in t or "snapdragon" in t or "dimensity" in t:
+                    # Flawless extraction: Strip spaces and punctuation to defeat Smartprix typos
+                    t_clean = t.replace(" ", "").replace("+", "plus").replace("-", "")
+                    for k in CPU_ANTUTU.keys():
+                        k_clean = k.lower().replace(" ", "").replace("+", "plus").replace("-", "")
+                        if k_clean in t_clean:
+                            cpu_name = k
+                            break
+                    if cpu_name == "Unknown":
+                        cpu_name = t.split(",")[0].title()
+                if "mah" in t:
+                    bm = re.search(r'(\d{3,5})\s*mah', t)
+                    if bm: battery_mah = int(bm.group(1))
+                    cm = re.search(r'(\d{1,3})\s*w', t)
+                    if cm: charging_w = int(cm.group(1))
+                if "display" in t or "inches" in t:
+                    rm = re.search(r'(\d{2,3})\s*hz', t)
+                    if rm: refresh_hz = int(rm.group(1))
+                    
+                    if "amoled" in t: screen_type = "AMOLED"
+                    elif "poled" in t or "p-oled" in t: screen_type = "P-OLED"
+                    elif "oled" in t: screen_type = "OLED"
+                    elif "lcd" in t or "ips" in t: screen_type = "IPS LCD"
+                    
+                if "camera" in t:
+                    if "front" in t:
+                        parts = t.split("&")
+                        rear_t, front_t = (parts[0], parts[1]) if len(parts) == 2 else (t, "")
+                        rm = re.search(r'(\d{1,3})\s*mp', rear_t)
+                        if rm: main_mp = int(rm.group(1))
+                        fm = re.search(r'(\d{1,3})\s*mp', front_t)
+                        if fm: front_mp = int(fm.group(1))
+                    else:
+                        rm = re.search(r'(\d{1,3})\s*mp', t)
+                        if rm: main_mp = int(rm.group(1))
+            
+            # Clean up name and append variant (e.g. 8GB/256GB)
+            name_clean = re.sub(r'\(\s*\d+\s*(?:gb|tb).*?\)', '', name, flags=re.IGNORECASE).strip()
+            # Also clean names like "OnePlus 12 5G 16GB RAM"
+            name_clean = re.sub(r'\d+\s*(?:gb|tb)\s*ram.*', '', name_clean, flags=re.IGNORECASE).strip()
+            if variant_str:
+                name_clean += variant_str
+            name = name_clean
+            
+            # Fetch detail page to get actual launch/release date and OS updates policy
+            link_el = card.select_one("a")
+            relative_link = link_el.get("href") if link_el else ""
+            launch_date = ""
+            os_updates_years = None
+            charging_mins = parse_charging_time(charging_w, battery_mah)
+            
+            if relative_link:
+                detail_url = relative_link if relative_link.startswith("http") else "https://www.smartprix.com" + relative_link
+                logger.info(f"Fetching actual launch date and OS updates for {name} from {detail_url}...")
+                launch_date, os_updates_years = extract_from_detail_page(detail_url)
+                time.sleep(0.2) # Polite request throttling
+                
+            if not launch_date:
+                launch_date = estimate_launch_date(cpu_name)
+                        
+            phones.append({
+                "id": re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-'),
+                "brand": (name.split()[0] if name else "Unknown").replace("Oppo", "OPPO").replace("oppo", "OPPO").replace("Iqoo", "iQOO").replace("iqoo", "iQOO").replace("Poco", "POCO").replace("poco", "POCO"),
+                "name": name,
+                "price_inr": price,
+                "image_url": img_url,
+                "launch_date": launch_date,
+                "os_updates_years": os_updates_years,
+                "charging_mins": charging_mins,
+                "cpu_name": cpu_name,
+                "battery_mah": battery_mah,
+                "charging_w": charging_w,
+                "display_refresh_hz": refresh_hz,
+                "screen_type": screen_type,
+                "main_camera_mp": main_mp,
+                "front_camera_mp": front_mp,
+            })
+        time.sleep(0.5)
+        
     return phones
 
 # ── Build final sheet row ────────────────────────────────────────────────────
@@ -551,28 +491,7 @@ def main():
     logger.info(f"PhoneArena Bot — Fetching 200 Live Phones ({datetime.utcnow().isoformat()})")
     logger.info("=" * 60)
 
-    client = None
-    existing_data = {}
-    try:
-        client = authenticate()
-        sheet_id = os.environ.get("SPREADSHEET_ID")
-        if sheet_id:
-            ws = client.open_by_key(sheet_id).sheet1
-            records = ws.get_all_records()
-            for r in records:
-                p_id = r.get("id")
-                if p_id:
-                    existing_data[p_id] = {
-                        "launch_date": r.get("launch_date"),
-                        "os_updates_years": r.get("os_updates_years")
-                    }
-            logger.info(f"Loaded {len(existing_data)} existing devices from sheet for caching.")
-        else:
-            logger.warning("SPREADSHEET_ID env var not found. Scraping without cache.")
-    except Exception as e:
-        logger.warning(f"Could not load existing records for caching: {e}")
-
-    phones = scrape_live_phones(limit=1500, existing_data=existing_data)
+    phones = scrape_live_phones(limit=1500)
     
     # Deduplicate
     seen = set()
@@ -589,8 +508,7 @@ def main():
     for r in rows[:5]:
         logger.info(f"  {r['name']:25s} CPU:{r['raw_cpu_score']} UI:{r['raw_ui_score']} Cam:{r['main_camera_score']}")
     
-    if not client:
-        client = authenticate()
+    client = authenticate()
     push_to_sheet(client, rows)
     logger.info("Done. Sheet updated with live data.")
 
