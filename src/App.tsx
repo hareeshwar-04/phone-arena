@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen } from "lucide-react";
+import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon } from "lucide-react";
 import type { PhoneSpec, WeightConfig, FilterConfig } from "./types";
 import { mockPhones, DEFAULT_FILTERS } from "./types";
 import { usePhoneRatings, useWeightedSort, useShareBattle } from "./hooks";
@@ -47,6 +47,49 @@ export default function App() {
   const [showSpecGuide, setShowSpecGuide] = useState(false);
   const [showTooltip, setShowTooltip] = useState(() => !localStorage.getItem("pa_spec_tooltip_v3"));
   const [showWizardTooltip, setShowWizardTooltip] = useState(() => !localStorage.getItem("pa_wizard_tooltip_v3"));
+  const [theme, setTheme] = useState<"light" | "dark">(() => (localStorage.getItem("pa_theme") as "light" | "dark") || "light");
+  const [styleMode, setStyleMode] = useState<"colorful" | "stealth">(() => (localStorage.getItem("pa_style_mode") as "colorful" | "stealth") || "colorful");
+  const [showHeader, setShowHeader] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // If we scroll down past 80px and position is greater than last scroll position, hide header
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        setShowHeader(false);
+      } 
+      // If we scroll up by any amount, show header
+      else if (currentScrollY < lastScrollY) {
+        setShowHeader(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("pa_theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (styleMode === "stealth") {
+      document.documentElement.classList.add("stealth-mode");
+    } else {
+      document.documentElement.classList.remove("stealth-mode");
+    }
+    localStorage.setItem("pa_style_mode", styleMode);
+  }, [styleMode]);
+
   const [filters, setFilters] = useState<FilterConfig>(() => {
     const saved = localStorage.getItem("pa_filters_v2");
     if (!saved) return { ...DEFAULT_FILTERS };
@@ -204,15 +247,21 @@ export default function App() {
       {showWizard && !loading && <OnboardingWizard onComplete={handleWizardComplete} onSkip={handleWizardSkip} />}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200">
+      <header className={`sticky top-0 z-50 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 transition-transform duration-300 ${
+        showHeader ? "translate-y-0" : "-translate-y-full"
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded bg-blue-600 flex items-center justify-center shadow-sm">
-              <Smartphone size={20} className="text-white" />
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView("discover")}>
+            <div className="w-10 h-10 rounded-xl animate-spin-gradient flex items-center justify-center shadow-md relative overflow-hidden group-hover:scale-105 transition-transform duration-300">
+              <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" />
+              <Smartphone size={20} className="text-white relative z-10 animate-bounce-subtle" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-neutral-900">PhoneArena</h1>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Database</p>
+              <h1 className="text-lg font-black tracking-tight text-neutral-900 flex items-center gap-1">
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">PhoneArena</span>
+                <span className="text-[9px] bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 px-1.5 py-0.5 rounded font-black uppercase">India</span>
+              </h1>
+              <p className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400">Smart Comparison Engine</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -321,6 +370,33 @@ export default function App() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Theme & Style Controls */}
+            <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-xl p-1 border border-neutral-200 dark:border-neutral-700/80">
+              {/* Light / Dark Toggle */}
+              <button 
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")} 
+                className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white transition-all shadow-sm flex items-center justify-center border border-neutral-200/40 dark:border-neutral-700/40" 
+                title={theme === "light" ? "Switch to Dark Theme" : "Switch to Light Theme"}
+              >
+                {theme === "light" ? <Moon size={13} /> : <Sun size={13} className="text-amber-500 fill-amber-500" />}
+              </button>
+              
+              <div className="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-700 self-center" />
+              
+              {/* Style Preset Selector */}
+              <button 
+                onClick={() => setStyleMode(styleMode === "colorful" ? "stealth" : "colorful")}
+                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1 shadow-sm border ${
+                  styleMode === "stealth"
+                    ? "bg-neutral-900 text-white border-neutral-950 dark:bg-white dark:text-neutral-900 dark:border-neutral-100"
+                    : "bg-white text-blue-600 border-neutral-200/50 dark:bg-neutral-900 dark:text-blue-400 dark:border-neutral-700/50"
+                }`}
+                title={styleMode === "colorful" ? "Switch to Stealth Mode (Classy Black & White)" : "Switch to Colorful Mode"}
+              >
+                {styleMode === "colorful" ? "🌈 Colorful" : "🥷 Stealth"}
+              </button>
             </div>
           </div>
         </div>
