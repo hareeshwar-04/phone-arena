@@ -351,6 +351,49 @@ export function SpecGuideModal({ isOpen, onClose }: SpecGuideModalProps) {
               </div>
             </div>
 
+            {/* 7. Bloatware & Adware */}
+            <div className="bg-white rounded-xl border border-neutral-200 p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-red-50 text-red-650 rounded-lg"><Trash2 size={18} /></div>
+                  <h3 className="font-extrabold text-sm uppercase tracking-wide text-neutral-800">🚫 Bloatware & Adware (The Bloatware Annoyance)</h3>
+                </div>
+                <span className="text-[10px] font-extrabold uppercase text-red-700 bg-red-50 px-2.5 py-0.5 rounded-full tracking-wider">UI Annoyance</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest block">What is it?</span>
+                  <p className="text-xs text-neutral-600 leading-relaxed">
+                    Pre-installed junk apps (unwanted games, duplicate stores, cleaner tools) and intrusive system ads that spam your lockscreen, notifications, and settings menu.
+                  </p>
+                </div>
+                <div className="space-y-2 bg-neutral-50 p-4 rounded-xl border border-neutral-100">
+                  <span className="text-xs font-bold text-neutral-600 uppercase tracking-wider block mb-2">🔥 How to Judge UI Annoyance:</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-neutral-200">
+                      <span className="text-xs font-extrabold text-neutral-850">🧼 Clean & Spam-Free</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">Pixel, Nothing, Motorola, Apple</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-neutral-200">
+                      <span className="text-xs font-extrabold text-neutral-850">⚠️ Moderate Bloat (Removable)</span>
+                      <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Samsung OneUI, OnePlus OxygenOS</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-neutral-200">
+                      <span className="text-xs font-extrabold text-neutral-850">🚨 Heavy Ads & Spam notifications</span>
+                      <span className="text-[10px] bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-bold">Infinix, Tecno, budget Xiaomi/Realme</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-red-50/40 p-3 rounded-lg border border-red-100 text-[11px] text-red-800 flex items-start gap-2">
+                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-red-650" />
+                <div>
+                  <strong>Pro Tip:</strong> An entry-level phone with clean software will often feel much faster and more pleasant day-to-day than a flagship phone that spam-notifies you with recommendations from "Hot Apps" every hour.
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* 10-Point Ratings breakdown */}
