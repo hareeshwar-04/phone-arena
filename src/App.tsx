@@ -1019,7 +1019,7 @@ export default function App() {
                       <button
                         key={p.name}
                         onClick={() => {
-                          setFilters({
+                          const nextFilters = {
                             ...filters,
                             weights: {
                               ...filters.weights,
@@ -1029,7 +1029,59 @@ export default function App() {
                               cameraEnabled: true,
                               osEnabled: true
                             }
-                          });
+                          };
+
+                          if (p.name === "Ultimate Gamer") {
+                            nextFilters.ramTypes = ["LPDDR5X", "LPDDR5"];
+                            nextFilters.storageTypes = ["UFS 4.0", "UFS 3.1"];
+                            nextFilters.refreshRateMin = 120;
+                            nextFilters.chargingMin = 60;
+                            nextFilters.batteryMin = 0;
+                            nextFilters.minCameraScore = 0;
+                            nextFilters.minOsYears = 0;
+                            nextFilters.priceRange = [5000, 200000];
+                          } else if (p.name === "Content Creator") {
+                            nextFilters.ramTypes = [];
+                            nextFilters.storageTypes = [];
+                            nextFilters.refreshRateMin = 0;
+                            nextFilters.chargingMin = 0;
+                            nextFilters.batteryMin = 0;
+                            nextFilters.minCameraScore = 8;
+                            nextFilters.minOsYears = 0;
+                            nextFilters.priceRange = [30000, 200000];
+                          } else if (p.name === "Road Warrior") {
+                            nextFilters.ramTypes = [];
+                            nextFilters.storageTypes = [];
+                            nextFilters.refreshRateMin = 0;
+                            nextFilters.chargingMin = 44;
+                            nextFilters.batteryMin = 5000;
+                            nextFilters.minCameraScore = 0;
+                            nextFilters.minOsYears = 0;
+                            nextFilters.priceRange = [5000, 200000];
+                          } else if (p.name === "Smart Buyer") {
+                            nextFilters.ramTypes = [];
+                            nextFilters.storageTypes = [];
+                            nextFilters.refreshRateMin = 90;
+                            nextFilters.chargingMin = 0;
+                            nextFilters.batteryMin = 0;
+                            nextFilters.minCameraScore = 0;
+                            nextFilters.minOsYears = 4;
+                            nextFilters.priceRange = [5000, 45000];
+                          } else if (p.name === "Balanced") {
+                            nextFilters.ramTypes = [];
+                            nextFilters.storageTypes = [];
+                            nextFilters.refreshRateMin = 0;
+                            nextFilters.chargingMin = 0;
+                            nextFilters.batteryMin = 0;
+                            nextFilters.minCameraScore = 0;
+                            nextFilters.minOsYears = 0;
+                            nextFilters.priceRange = [5000, 200000];
+                            nextFilters.ramCapacities = [];
+                            nextFilters.storageCapacities = [];
+                            nextFilters.selectedBrands = [];
+                          }
+
+                          setFilters(nextFilters);
                         }}
                         className={`flex flex-col items-start text-left p-3 rounded-xl border transition-all duration-300 relative overflow-hidden ${
                           isActive 

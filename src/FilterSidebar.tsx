@@ -2,7 +2,7 @@ import {
   SlidersHorizontal, Zap, Shield, Camera, Wrench, ChevronDown,
   Battery, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, Sparkles, Smartphone
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { WeightConfig, FilterConfig } from "./types";
 import { formatINR, DEFAULT_FILTERS } from "./types";
 
@@ -20,10 +20,17 @@ interface FilterSidebarProps {
   phoneCount: number;
 }
 
-function CollapsibleSection({ title, icon, defaultOpen = false, children }: {
-  title: string; icon: React.ReactNode; defaultOpen?: boolean; children: React.ReactNode;
+function CollapsibleSection({ title, icon, forceOpen = false, defaultOpen = false, children }: {
+  title: string; icon: React.ReactNode; forceOpen?: boolean; defaultOpen?: boolean; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (forceOpen) {
+      setOpen(true);
+    }
+  }, [forceOpen]);
+
   return (
     <div className="pt-4 border-t border-neutral-200 first:border-t-0 first:pt-0">
       <button
@@ -197,7 +204,7 @@ export function FilterSidebar({
       </CollapsibleSection>
 
       {/* Memory & Storage Capacity */}
-      <CollapsibleSection title="RAM and Storage" icon={<HardDrive size={14} />} defaultOpen={true}>
+      <CollapsibleSection title="RAM and Storage" icon={<HardDrive size={14} />} defaultOpen={true} forceOpen={(filters.ramCapacities || []).length > 0 || (filters.storageCapacities || []).length > 0}>
         <div className="pb-1">
           {availableRamCapacities && availableRamCapacities.length > 0 && (
             <div className="mb-3">
@@ -291,7 +298,7 @@ export function FilterSidebar({
       </CollapsibleSection>
 
       {/* Battery & Charging */}
-      <CollapsibleSection title="Battery & Charging" icon={<Battery size={14} />}>
+      <CollapsibleSection title="Battery & Charging" icon={<Battery size={14} />} forceOpen={filters.batteryMin > 0 || filters.chargingMin > 0}>
         <div className="pb-1">
           <RangeSlider
             label="Min Battery"
@@ -311,7 +318,7 @@ export function FilterSidebar({
       </CollapsibleSection>
 
       {/* Display */}
-      <CollapsibleSection title="Display" icon={<Monitor size={14} />}>
+      <CollapsibleSection title="Display" icon={<Monitor size={14} />} forceOpen={filters.refreshRateMin > 0 || filters.screenTypes.length > 0}>
         <div className="pb-1">
           <RangeSlider
             label="Min Refresh Rate"
@@ -335,7 +342,7 @@ export function FilterSidebar({
       </CollapsibleSection>
 
       {/* Processor & Memory */}
-      <CollapsibleSection title="Processor & Memory" icon={<Cpu size={14} />}>
+      <CollapsibleSection title="Processor & Memory" icon={<Cpu size={14} />} forceOpen={filters.ramTypes.length > 0 || filters.storageTypes.length > 0 || filters.processorTiers.length > 0}>
         <div className="pb-1">
           {availableRamTypes.length > 0 && (
             <div className="mb-3">
@@ -364,7 +371,7 @@ export function FilterSidebar({
 
 
       {/* Camera */}
-      <CollapsibleSection title="Camera" icon={<Camera size={14} />}>
+      <CollapsibleSection title="Camera" icon={<Camera size={14} />} forceOpen={filters.minCameraScore > 0}>
         <div className="pb-1">
           <RangeSlider
             label="Min Camera Score"
@@ -377,7 +384,7 @@ export function FilterSidebar({
       </CollapsibleSection>
 
       {/* Software */}
-      <CollapsibleSection title="Software & Updates" icon={<Shield size={14} />}>
+      <CollapsibleSection title="Software & Updates" icon={<Shield size={14} />} forceOpen={filters.minOsYears > 0}>
         <div className="pb-1">
           <RangeSlider
             label="Min OS Update Years"
