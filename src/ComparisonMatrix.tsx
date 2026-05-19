@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone, Trophy, Sparkles } from "lucide-react";
+import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone, Trophy, Sparkles, Medal } from "lucide-react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 import { useVerdict, getOSUpdatesStatus, calcMatchScore, getRamStorage, formatLaunchDate } from "./hooks";
@@ -100,6 +100,34 @@ function calculateUpgradeVerdict(phoneA: PhoneWithRatings, phoneB: PhoneWithRati
   }
   
   return { current, target, upgradePercent, verdictTitle, verdictDesc, badgeColor, textColor, ringColor, perfDelta, camDelta, osDelta };
+}
+
+function renderMedal(index: number, showText: boolean = false) {
+  if (index === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-450">
+        <Trophy size={11} className="text-amber-500 fill-amber-500/25" />
+        {showText && <span>1st</span>}
+      </span>
+    );
+  }
+  if (index === 1) {
+    return (
+      <span className="inline-flex items-center gap-1 font-bold text-slate-500 dark:text-slate-400">
+        <Medal size={11} className="text-slate-400 fill-slate-400/25" />
+        {showText && <span>2nd</span>}
+      </span>
+    );
+  }
+  if (index === 2) {
+    return (
+      <span className="inline-flex items-center gap-1 font-bold text-amber-850 dark:text-amber-600">
+        <Medal size={11} className="text-amber-700 fill-amber-700/25" />
+        {showText && <span>3rd</span>}
+      </span>
+    );
+  }
+  return <span className="text-neutral-500 dark:text-neutral-400 font-bold text-[10px]">{index + 1}.</span>;
 }
 
 export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneWithRatings[]; onRemove: (id: string) => void; weights: WeightConfig }) {
@@ -402,12 +430,13 @@ export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneW
                   <span className="text-[10px] font-extrabold uppercase text-amber-800 tracking-wider block mb-2">Overall Rankings</span>
                   <div className="space-y-1.5">
                     {rankedAllRounders.slice(0, 3).map((item, index) => {
-                      const medal = index === 0 ? "🥇 1st" : index === 1 ? "🥈 2nd" : "🥉 3rd";
                       const badgeBg = index === 0 ? "bg-amber-100 text-amber-900 border-amber-200" : index === 1 ? "bg-slate-100 text-slate-800 border-slate-200" : "bg-orange-50 text-orange-850 border-orange-100";
                       return (
                         <div key={item.phone.id} className="flex items-center justify-between bg-white/60 hover:bg-white/90 border border-neutral-100 rounded-lg p-2 transition-colors">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${badgeBg}`}>{medal}</span>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${badgeBg} flex items-center gap-1`}>
+                              {renderMedal(index, true)}
+                            </span>
                             <span className="text-xs font-bold text-neutral-800">{item.phone.name}</span>
                           </div>
                           <span className="text-xs font-bold text-neutral-600">{item.avgScore.toFixed(1)}/10</span>
@@ -494,7 +523,6 @@ export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneW
                   {/* Detailed Ranking List */}
                   <div className="flex-1 space-y-2 mt-2">
                     {ranked.map((p, index) => {
-                      const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index+1}.`;
                       const isWinner = index === 0;
 
                       let labelNode: React.ReactNode;
@@ -519,7 +547,7 @@ export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneW
                       return (
                         <div key={p.id} className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors ${isWinner ? 'bg-blue-50/60 border-blue-200 shadow-sm' : 'bg-neutral-50/50 border-neutral-100 hover:bg-neutral-50'}`}>
                           <div className="flex items-center gap-2 overflow-hidden flex-1 pr-2">
-                            <span className="text-[11px] w-5 text-center flex-shrink-0">{medal}</span>
+                            <span className="text-[11px] w-5 text-center flex-shrink-0 flex items-center justify-center">{renderMedal(index)}</span>
                             {labelNode}
                           </div>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${isWinner ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-neutral-600 border border-neutral-200 shadow-sm'}`}>{cat.key(p).toFixed(1)}/10</span>

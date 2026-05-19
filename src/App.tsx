@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon, Palette, Zap, Camera } from "lucide-react";
+import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon, Palette, Zap, Camera, Scale, Gamepad2, BatteryCharging, Coins } from "lucide-react";
 import type { PhoneSpec, WeightConfig, FilterConfig } from "./types";
 import { mockPhones, DEFAULT_FILTERS } from "./types";
 import { usePhoneRatings, useWeightedSort, useShareBattle, getRamStorage } from "./hooks";
@@ -17,31 +17,31 @@ type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera
 const PERSONAS = [
   {
     name: "Balanced",
-    icon: "⚖️",
+    icon: <Scale size={16} className="text-neutral-500" />,
     desc: "Equal priorities for all attributes",
     weights: { performance: 50, reliability: 50, camera: 50, os: 50 }
   },
   {
     name: "Ultimate Gamer",
-    icon: "🎮",
+    icon: <Gamepad2 size={16} className="text-indigo-500" />,
     desc: "Speed & charging speed focused",
     weights: { performance: 100, reliability: 50, camera: 10, os: 10 }
   },
   {
     name: "Content Creator",
-    icon: "📸",
+    icon: <Camera size={16} className="text-pink-500" />,
     desc: "Top-tier camera & media focus",
     weights: { performance: 50, reliability: 10, camera: 100, os: 50 }
   },
   {
     name: "Road Warrior",
-    icon: "🔋",
+    icon: <BatteryCharging size={16} className="text-green-500" />,
     desc: "Long durability & maximum battery",
     weights: { performance: 10, reliability: 100, camera: 10, os: 50 }
   },
   {
     name: "Smart Buyer",
-    icon: "💰",
+    icon: <Coins size={16} className="text-amber-500" />,
     desc: "Highest hardware value per rupee",
     weights: { performance: 50, reliability: 50, camera: 10, os: 100 }
   }
@@ -1006,7 +1006,13 @@ export default function App() {
                             <Trophy size={10} />
                           </div>
                         )}
-                        <span className="text-lg mb-1">{p.icon}</span>
+                        <div className={`p-2 rounded-xl mb-1.5 transition-colors ${
+                          isActive 
+                            ? "bg-neutral-100 dark:bg-neutral-800 text-blue-500" 
+                            : "bg-neutral-50 dark:bg-neutral-900 text-neutral-400"
+                        }`}>
+                          {p.icon}
+                        </div>
                         <span className="text-[11px] font-black text-neutral-800 dark:text-neutral-200">{p.name}</span>
                         <span className="text-[9px] text-neutral-450 dark:text-neutral-500 mt-0.5 line-clamp-1 leading-normal">{p.desc}</span>
                       </button>

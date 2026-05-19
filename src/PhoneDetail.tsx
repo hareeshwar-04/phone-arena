@@ -3,7 +3,6 @@ import { useMemo, useEffect } from "react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 import { getProsAndCons, getOSUpdatesStatus, calcMatchScore, getRamStorage, formatLaunchDate } from "./hooks";
-import { BrandLogo } from "./PhoneCard";
 
 interface Props {
   phone: PhoneWithRatings;
@@ -147,7 +146,7 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
           <div className="flex items-center justify-between p-6 sm:p-8 border-b border-neutral-100 bg-white">
             <div>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight">{phone.name}</h2>
-              <div className="mt-2.5"><BrandLogo brand={phone.brand} className="scale-110 origin-left" /></div>
+              <p className="text-sm font-bold uppercase tracking-wider text-blue-600 mt-2">{phone.brand}</p>
             </div>
             <div className="text-right hidden sm:block">
               <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 mb-1">Estimated Price</p>

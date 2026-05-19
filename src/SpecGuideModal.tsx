@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { 
   X, Cpu, Monitor, Battery, Shield, Star, BookOpen, HardDrive, 
-  Zap, Coffee, AlertTriangle, Check, Info, Trash2, Sliders, Camera, Flame
+  Zap, Coffee, AlertTriangle, Check, Info, Trash2, Sliders, Camera, Flame,
+  Rocket, Trophy, Ban
 } from "lucide-react";
 
 interface SpecGuideModalProps {
@@ -186,8 +187,8 @@ export function SpecGuideModal({ isOpen, onClose }: SpecGuideModalProps) {
                         Runs games, system tasks, photo processing, and AI apps. A weak processor creates lag, thermal heating, and makes the phone feel slow within a year.
                       </p>
                       <div className="text-xs text-neutral-700 space-y-1.5 font-semibold bg-neutral-50 p-3.5 rounded-xl border border-neutral-100">
-                        <p className="flex items-center gap-1.5 text-neutral-700">🚀 <span className="font-bold text-neutral-800">Flagships:</span> Instant loads & max-settings gaming.</p>
-                        <p className="flex items-center gap-1.5 text-neutral-700">⚠️ <span className="font-bold text-neutral-800">Budget chips:</span> Slow camera opening, micro-stutters.</p>
+                        <p className="flex items-center gap-1.5 text-neutral-700"><Rocket size={14} className="text-blue-500" /> <span className="font-bold text-neutral-800">Flagships:</span> Instant loads & max-settings gaming.</p>
+                        <p className="flex items-center gap-1.5 text-neutral-700"><AlertTriangle size={14} className="text-amber-500" /> <span className="font-bold text-neutral-800">Budget chips:</span> Slow camera opening, micro-stutters.</p>
                       </div>
                     </div>
                     
@@ -195,15 +196,15 @@ export function SpecGuideModal({ isOpen, onClose }: SpecGuideModalProps) {
                       <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Performance Benchmarks:</p>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-100 px-3 py-2 rounded-xl">
-                          <span className="text-xs font-black text-emerald-950">🥇 1.5M+ AnTuTu (Flagship)</span>
+                          <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5"><Trophy size={14} className="text-amber-500 fill-amber-500/20" /> 1.5M+ AnTuTu (Flagship)</span>
                           <span className="text-[9px] bg-emerald-600 text-white px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Top Tier</span>
                         </div>
                         <div className="flex items-center justify-between bg-blue-50/50 border border-blue-100 px-3 py-2 rounded-xl">
-                          <span className="text-xs font-black text-blue-950">⚡ 600K – 1M AnTuTu (Mid-Range)</span>
+                          <span className="text-xs font-black text-blue-950 flex items-center gap-1.5"><Zap size={14} className="text-blue-500 fill-blue-500/20" /> 600K – 1M AnTuTu (Mid-Range)</span>
                           <span className="text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Sweet Spot</span>
                         </div>
                         <div className="flex items-center justify-between bg-rose-50/50 border border-rose-100 px-3 py-2 rounded-xl">
-                          <span className="text-xs font-black text-rose-950">🚫 Below 400K AnTuTu (Budget)</span>
+                          <span className="text-xs font-black text-rose-950 flex items-center gap-1.5"><Ban size={14} className="text-rose-500" /> Below 400K AnTuTu (Budget)</span>
                           <span className="text-[9px] bg-rose-600 text-white px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Avoid if possible</span>
                         </div>
                       </div>
@@ -394,15 +395,15 @@ export function SpecGuideModal({ isOpen, onClose }: SpecGuideModalProps) {
                       <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Ideal Sweet Spots:</p>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-100 px-3 py-2 rounded-xl">
-                          <span className="text-xs font-black text-emerald-950">🔋 5000mAh+ Capacity</span>
+                          <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5"><Battery size={14} className="text-emerald-600 fill-emerald-600/20" /> 5000mAh+ Capacity</span>
                           <span className="text-[9px] text-emerald-700 bg-emerald-55 font-bold px-2 py-0.5 rounded-md">Easy All-Day Lifespan</span>
                         </div>
                         <div className="flex items-center justify-between bg-blue-50/50 border border-blue-100 px-3 py-2 rounded-xl">
-                          <span className="text-xs font-black text-blue-950">⚡ 67W – 120W+ Fast Charge</span>
+                          <span className="text-xs font-black text-blue-950 flex items-center gap-1.5"><Zap size={14} className="text-blue-500 fill-blue-500/20" /> 67W – 120W+ Fast Charge</span>
                           <span className="text-[9px] text-blue-700 bg-blue-55 font-bold px-2 py-0.5 rounded-md">Fully Charged in 25 Mins</span>
                         </div>
                         <div className="flex items-center justify-between bg-rose-50/50 border border-rose-100 px-3 py-2 rounded-xl">
-                          <span className="text-xs font-black text-rose-950">🚫 15W – 25W Charging</span>
+                          <span className="text-xs font-black text-rose-950 flex items-center gap-1.5"><Ban size={14} className="text-rose-500" /> 15W – 25W Charging</span>
                           <span className="text-[9px] text-rose-700 bg-rose-55 font-bold px-2 py-0.5 rounded-md">Takes ~2 Hours</span>
                         </div>
                       </div>
