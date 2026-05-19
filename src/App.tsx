@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon } from "lucide-react";
+import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon, Palette } from "lucide-react";
 import type { PhoneSpec, WeightConfig, FilterConfig } from "./types";
 import { mockPhones, DEFAULT_FILTERS } from "./types";
 import { usePhoneRatings, useWeightedSort, useShareBattle } from "./hooks";
@@ -51,6 +51,7 @@ export default function App() {
   const [styleMode, setStyleMode] = useState<"colorful" | "stealth">(() => (localStorage.getItem("pa_style_mode") as "colorful" | "stealth") || "colorful");
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -372,31 +373,85 @@ export default function App() {
               )}
             </div>
 
-            {/* Theme & Style Controls */}
-            <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-xl p-1 border border-neutral-200 dark:border-neutral-700/80">
-              {/* Light / Dark Toggle */}
+            {/* Theme & Style Controls Dropdown */}
+            <div className="relative">
               <button 
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")} 
-                className="p-1.5 rounded-lg bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white transition-all shadow-sm flex items-center justify-center border border-neutral-200/40 dark:border-neutral-700/40" 
-                title={theme === "light" ? "Switch to Dark Theme" : "Switch to Light Theme"}
+                onClick={() => setShowThemeDropdown(!showThemeDropdown)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-xs font-semibold text-neutral-600 dark:text-neutral-300 transition-all border border-neutral-200 dark:border-neutral-700"
+                title="Theme Settings"
               >
-                {theme === "light" ? <Moon size={13} /> : <Sun size={13} className="text-amber-500 fill-amber-500" />}
+                <Palette size={14} className="text-neutral-500 dark:text-neutral-400" />
+                <span>Theme</span>
               </button>
-              
-              <div className="w-[1px] h-4 bg-neutral-200 dark:bg-neutral-700 self-center" />
-              
-              {/* Style Preset Selector */}
-              <button 
-                onClick={() => setStyleMode(styleMode === "colorful" ? "stealth" : "colorful")}
-                className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all duration-200 flex items-center gap-1 shadow-sm border ${
-                  styleMode === "stealth"
-                    ? "bg-neutral-900 text-white border-neutral-950 dark:bg-white dark:text-neutral-900 dark:border-neutral-100"
-                    : "bg-white text-blue-600 border-neutral-200/50 dark:bg-neutral-900 dark:text-blue-400 dark:border-neutral-700/50"
-                }`}
-                title={styleMode === "colorful" ? "Switch to Stealth Mode (Classy Black & White)" : "Switch to Colorful Mode"}
-              >
-                {styleMode === "colorful" ? "🌈 Colorful" : "🥷 Stealth"}
-              </button>
+
+              {showThemeDropdown && (
+                <>
+                  {/* Click outside overlay */}
+                  <div className="fixed inset-0 z-40" onClick={() => setShowThemeDropdown(false)} />
+                  
+                  {/* Dropdown panel */}
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 shadow-xl z-50 animate-fade-in text-neutral-900 dark:text-white">
+                    {/* Section 1: Base Theme */}
+                    <div className="space-y-2 mb-3">
+                      <span className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Appearance</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button 
+                          onClick={() => { setTheme("light"); setShowThemeDropdown(false); }}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
+                            theme === "light" 
+                              ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/50" 
+                              : "bg-neutral-50 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-700/55"
+                          }`}
+                        >
+                          <Sun size={12} /> Light
+                        </button>
+                        <button 
+                          onClick={() => { setTheme("dark"); setShowThemeDropdown(false); }}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
+                            theme === "dark" 
+                              ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/50" 
+                              : "bg-neutral-50 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border-transparent hover:bg-neutral-100 dark:hover:bg-neutral-700/55"
+                          }`}
+                        >
+                          <Moon size={12} /> Dark
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-[1px] bg-neutral-100 dark:bg-neutral-800 my-2.5" />
+
+                    {/* Section 2: Accent Preset */}
+                    <div className="space-y-2">
+                      <span className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Style Mode</span>
+                      <div className="flex flex-col gap-1">
+                        <button 
+                          onClick={() => { setStyleMode("colorful"); setShowThemeDropdown(false); }}
+                          className={`py-2 px-2.5 rounded-lg text-xs font-bold flex items-center justify-between transition-all border ${
+                            styleMode === "colorful"
+                              ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-850 dark:text-white border-neutral-200 dark:border-neutral-700/80"
+                              : "bg-transparent text-neutral-600 dark:text-neutral-400 border-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">🌈 Colorful Accents</span>
+                          {styleMode === "colorful" && <span className="w-1.5 h-1.5 rounded-full bg-blue-650 dark:bg-blue-400" />}
+                        </button>
+                        <button 
+                          onClick={() => { setStyleMode("stealth"); setShowThemeDropdown(false); }}
+                          className={`py-2 px-2.5 rounded-lg text-xs font-bold flex items-center justify-between transition-all border ${
+                            styleMode === "stealth"
+                              ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-850 dark:text-white border-neutral-200 dark:border-neutral-700/80"
+                              : "bg-transparent text-neutral-600 dark:text-neutral-400 border-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">🥷 Stealth Mode</span>
+                          {styleMode === "stealth" && <span className="w-1.5 h-1.5 rounded-full bg-neutral-950 dark:bg-neutral-100" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
