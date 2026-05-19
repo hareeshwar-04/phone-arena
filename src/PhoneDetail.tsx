@@ -178,7 +178,7 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
   }, [phone, allPhones]);
   return (
     <div className="min-h-screen bg-neutral-50/50 dark:bg-neutral-950 animate-fade-in pb-20 text-neutral-900 dark:text-neutral-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-10">
         
         {/* Navigation Back Button */}
         <button 
@@ -193,7 +193,7 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
           {/* Header */}
           <div className="flex items-center justify-between p-6 sm:p-8 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <div>
-              <h2 className="text-2xl sm:text-4xl font-extrabold text-neutral-900 dark:text-white tracking-tight">{phone.name}</h2>
+              <h2 className="text-xl sm:text-2xl lg:text-4xl font-extrabold text-neutral-900 dark:text-white tracking-tight">{phone.name}</h2>
               <p className="text-sm font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 mt-2">{phone.brand}</p>
             </div>
             <div className="text-right hidden sm:block">
@@ -203,16 +203,16 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
           </div>
           
           {/* Content */}
-          <div className="p-6 sm:p-8 bg-neutral-50/30 dark:bg-neutral-950/20">
+          <div className="p-4 sm:p-6 lg:p-8 bg-neutral-50/30 dark:bg-neutral-950/20">
             <div className="flex flex-col lg:flex-row gap-10">
               
               {/* Left Column - Image & Quick Buy */}
               <div className="w-full lg:w-80 flex-shrink-0 flex flex-col">
-                <div className="w-full aspect-[3/4] image-container-bg rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm mb-6 relative flex items-center justify-center p-6 bg-white dark:bg-neutral-900">
+                <div className="w-full aspect-[4/5] sm:aspect-[3/4] image-container-bg rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm mb-4 sm:mb-6 relative flex items-center justify-center p-4 sm:p-6 bg-white dark:bg-neutral-900">
                   <PhoneImage imageUrl={phone.image_url} name={phone.name} brand={phone.brand} className="max-w-full max-h-full object-contain drop-shadow-xl hover:scale-105 transition-transform duration-500" iconSize={40} />
                 </div>
                 
-                <div className="w-full bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
+                <div className="w-full bg-white dark:bg-neutral-900 p-4 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
                   <div className="sm:hidden text-center mb-6">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 dark:text-neutral-500 mb-2">Estimated Price</p>
                     <p className="text-3xl font-black text-neutral-900 dark:text-white">{formatINR(phone.price_inr)}</p>
@@ -432,12 +432,12 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
                   <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200 mb-5 pb-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                     <Star size={16} /> Computed Persona Ratings
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
-                    <ScoreCard icon={<Zap size={16} />} title="Your Match" score={calcMatchScore(phone, weights)} color="text-blue-600 dark:text-blue-400" bg="bg-blue-50 dark:bg-blue-950/30" border="border-blue-400 dark:border-blue-900/50 ring-4 ring-blue-50 dark:ring-blue-950/20" className="col-span-2 sm:col-span-2 shadow-md scale-[1.02]" />
-                    <ScoreCard icon={<Zap size={16} />} title="Performance" score={phone.ratings.performance} color="text-purple-600 dark:text-purple-400" bg="bg-purple-50 dark:bg-purple-950/20" border="border-purple-200 dark:border-purple-900/30" />
-                    <ScoreCard icon={<Camera size={16} />} title="Camera" score={phone.ratings.camera} color="text-pink-600 dark:text-pink-400" bg="bg-pink-50 dark:bg-pink-950/20" border="border-pink-200 dark:border-pink-900/30" />
-                    <ScoreCard icon={<Shield size={16} />} title="Reliability" score={phone.ratings.reliability} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-50 dark:bg-emerald-950/20" border="border-emerald-200 dark:border-emerald-900/30" />
-                    <ScoreCard icon={<Star size={16} />} title="Value" score={phone.ratings.vfm} color="text-amber-600 dark:text-amber-400" bg="bg-amber-50 dark:bg-amber-950/20" border="border-amber-200 dark:border-amber-900/30" />
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-4">
+                    <ScoreCard icon={<Zap size={14} />} title="Match" score={calcMatchScore(phone, weights)} color="text-blue-600 dark:text-blue-400" bg="bg-blue-50 dark:bg-blue-950/30" border="border-blue-400 dark:border-blue-900/50 ring-2 sm:ring-4 ring-blue-50 dark:ring-blue-950/20" className="col-span-3 sm:col-span-2 shadow-md scale-[1.02]" />
+                    <ScoreCard icon={<Zap size={14} />} title="Perf" score={phone.ratings.performance} color="text-purple-600 dark:text-purple-400" bg="bg-purple-50 dark:bg-purple-950/20" border="border-purple-200 dark:border-purple-900/30" />
+                    <ScoreCard icon={<Camera size={14} />} title="Camera" score={phone.ratings.camera} color="text-pink-600 dark:text-pink-400" bg="bg-pink-50 dark:bg-pink-950/20" border="border-pink-200 dark:border-pink-900/30" />
+                    <ScoreCard icon={<Shield size={14} />} title="Rely" score={phone.ratings.reliability} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-50 dark:bg-emerald-950/20" border="border-emerald-200 dark:border-emerald-900/30" />
+                    <ScoreCard icon={<Star size={14} />} title="Value" score={phone.ratings.vfm} color="text-amber-600 dark:text-amber-400" bg="bg-amber-50 dark:bg-amber-950/20" border="border-amber-200 dark:border-amber-900/30" />
                   </div>
                 </div>
 
@@ -583,8 +583,8 @@ function ScoreCard({ icon, title, score, color, bg, border, className = "" }: an
   return (
     <div className={`p-4 rounded-xl border ${border} ${bg} flex flex-col items-center justify-center text-center shadow-sm ${className}`}>
       <div className={`${color} mb-2 opacity-90 p-2 rounded-full bg-white/60 dark:bg-neutral-800/60`}>{icon}</div>
-      <p className="text-[10px] uppercase tracking-wider font-extrabold text-neutral-600 dark:text-neutral-400 mb-1.5">{title}</p>
-      <p className={`text-2xl font-black ${color}`}>{score.toFixed(1)}<span className="text-[11px] text-neutral-400 font-bold ml-0.5">/10</span></p>
+      <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-extrabold text-neutral-600 dark:text-neutral-400 mb-1 sm:mb-1.5">{title}</p>
+      <p className={`text-xl sm:text-2xl font-black ${color}`}>{score.toFixed(1)}<span className="text-[10px] sm:text-[11px] text-neutral-400 font-bold ml-0.5">/10</span></p>
     </div>
   )
 }

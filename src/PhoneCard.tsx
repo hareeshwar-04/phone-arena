@@ -102,7 +102,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
         </div>
       )}
       
-      <div className="p-6 flex-1 flex flex-col justify-between">
+      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
         {/* Recommendation Badges */}
         {badges && badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
@@ -115,8 +115,8 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
         )}
 
         {/* Product Details Header */}
-        <div className="flex items-start gap-4 mb-4 border-b border-neutral-100 dark:border-neutral-800 pb-4">
-          <div className="w-16 h-20 image-container-bg flex items-center justify-center flex-shrink-0 rounded-xl p-1 border border-neutral-100 dark:border-neutral-850">
+        <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4 border-b border-neutral-100 dark:border-neutral-800 pb-3 sm:pb-4">
+          <div className="w-14 h-[72px] sm:w-16 sm:h-20 image-container-bg flex items-center justify-center flex-shrink-0 rounded-xl p-1 border border-neutral-100 dark:border-neutral-850">
             <PhoneImage 
               imageUrl={phone.image_url} 
               name={phone.name} 
@@ -134,15 +134,15 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
                   : "bg-neutral-50 dark:bg-neutral-850 text-neutral-600 dark:text-neutral-450 border border-neutral-200/60 dark:border-neutral-800/40"
               }`}>{phone.screen_type.split(" ")[0]}</span>
             </p>
-            <h3 className="text-sm font-black text-neutral-900 dark:text-white tracking-tight leading-tight mt-1" title={phone.name}>
+            <h3 className="text-[13px] sm:text-sm font-black text-neutral-900 dark:text-white tracking-tight leading-tight mt-1" title={phone.name}>
               {phone.name}
             </h3>
-            <p className="text-base font-black text-blue-600 dark:text-blue-400 mt-1">{formatINR(phone.price_inr)}</p>
+            <p className="text-[15px] sm:text-base font-black text-blue-600 dark:text-blue-400 mt-1">{formatINR(phone.price_inr)}</p>
           </div>
         </div>
         
         {/* Specifications List */}
-        <div className="flex flex-col gap-2.5 text-[11px] text-neutral-650 dark:text-neutral-400 mb-5 font-medium">
+        <div className="flex flex-col gap-2 sm:gap-2.5 text-[11px] text-neutral-650 dark:text-neutral-400 mb-4 sm:mb-5 font-medium">
           <div className="flex items-center gap-2">
             <Cpu size={13} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" /> 
             <span className="truncate text-neutral-700 dark:text-neutral-350">{phone.cpu_name}</span>
@@ -157,9 +157,9 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
           </div>
           <div className="flex items-center gap-2">
             <Battery size={13} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" /> 
-            <span className="text-neutral-700 dark:text-neutral-350">{phone.battery_mah}mAh ({phone.charging_mins}m estimated charge time)</span>
+            <span className="text-neutral-700 dark:text-neutral-350">{phone.battery_mah}mAh • {phone.charging_w}W • ~{phone.charging_mins}min</span>
           </div>
-          <div className="flex items-center gap-2 border-t border-neutral-100 dark:border-neutral-800 pt-2.5 mt-0.5">
+          <div className="flex items-center gap-2 border-t border-neutral-100 dark:border-neutral-800 pt-2 sm:pt-2.5 mt-0.5">
             <Calendar size={13} className="text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
             <span className={
               osStatus.yearsLeft === 0 
@@ -171,14 +171,14 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
               {osStatus.yearsLeft === 0 
                 ? "EOL: No updates left" 
                 : osStatus.yearsLeft <= 1.25 
-                  ? `Warning: Only ${osStatus.yearsLeft.toFixed(1)} yrs updates remaining!` 
+                  ? `Only ${osStatus.yearsLeft.toFixed(1)} yrs left!` 
                   : `${Math.ceil(osStatus.yearsLeft)} OS updates left`}
             </span>
           </div>
         </div>
         
         {/* Dynamic Category Ratings */}
-        <div className="space-y-2.5 mb-5 border-t border-neutral-100 dark:border-neutral-800 pt-4">
+        <div className="space-y-2 sm:space-y-2.5 mb-4 sm:mb-5 border-t border-neutral-100 dark:border-neutral-800 pt-3 sm:pt-4">
           {[
             { label: "Performance", value: phone.ratings.performance, icon: <Zap size={11} className="text-neutral-400 dark:text-neutral-500" /> },
             { label: "Camera", value: phone.ratings.camera, icon: <Camera size={11} className="text-neutral-400 dark:text-neutral-500" /> },
@@ -257,7 +257,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
         <div className="flex items-center gap-2">
           <button 
             onClick={(e) => { e.stopPropagation(); onToggle(phone.id); }} 
-            className={`flex-[4] py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1 ${
+            className={`flex-[4] py-3 sm:py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1 ${
               isCompared 
                 ? "bg-red-50 dark:bg-red-950/30 text-red-650 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-150 dark:border-red-900/30" 
                 : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-350 hover:bg-neutral-200 dark:hover:bg-neutral-750 border border-neutral-200/50 dark:border-neutral-800/40"
@@ -273,7 +273,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
                 target="_blank" 
                 rel="noopener noreferrer" 
                 onClick={(e) => e.stopPropagation()} 
-                className="flex-1 py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/20 border border-orange-200/60 dark:border-orange-900/30 shadow-sm" 
+                className="flex-1 py-3 sm:py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/20 border border-orange-200/60 dark:border-orange-900/30 shadow-sm" 
                 title="Buy on Amazon"
               >
                 Amazon
@@ -283,7 +283,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
                 target="_blank" 
                 rel="noopener noreferrer" 
                 onClick={(e) => e.stopPropagation()} 
-                className="flex-1 py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 border border-blue-200/60 dark:border-blue-900/30 shadow-sm" 
+                className="flex-1 py-3 sm:py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 border border-blue-200/60 dark:border-blue-900/30 shadow-sm" 
                 title="Buy on Flipkart"
               >
                 Flipkart
@@ -292,7 +292,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
           ) : (
             <button 
               onClick={(e) => { e.stopPropagation(); setShowBuyOptions(true); }} 
-              className="flex-[4] py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 shadow-sm"
+              className="flex-[4] py-3 sm:py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-1.5 bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 shadow-sm"
             >
               <ShoppingCart size={13} /> Buy Now
             </button>

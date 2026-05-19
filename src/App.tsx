@@ -648,7 +648,7 @@ export default function App() {
       <header className={`sticky top-0 z-50 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 transition-transform duration-300 ${
         showHeader ? "translate-y-0" : "-translate-y-full"
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView("discover")}>
             <div className="relative w-10 h-10 flex items-center justify-center flex-shrink-0 scale-95 group-hover:scale-100 transition-transform duration-300">
               {/* Overlapping back device shadow layer */}
@@ -814,8 +814,8 @@ export default function App() {
                 </div>
               </div>
             </div>
-            <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
-              <SlidersHorizontal size={20} />
+            <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2.5 rounded-xl bg-neutral-100 text-neutral-600 border border-neutral-200 active:scale-95 transition-transform">
+              <SlidersHorizontal size={18} />
             </button>
             {/* Re-open wizard */}
             <div className="relative">
@@ -927,7 +927,7 @@ export default function App() {
           </div>
         </div>
         {/* Mobile search */}
-        <div className="sm:hidden px-4 pb-3">
+        <div className="sm:hidden px-3 pb-2">
           <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-750 px-3 py-2 gap-2 text-neutral-900 dark:text-white">
             <Search size={14} className="text-neutral-400 dark:text-neutral-500" />
             <input 
@@ -986,7 +986,7 @@ export default function App() {
           userPhone={userPhone}
         />
       ) : (
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-5 sm:py-8">
         {view === "compare" && (
           <div>
             {comparedPhones.length === 0 ? (
@@ -1080,7 +1080,7 @@ export default function App() {
                   <Sparkles size={16} className="text-blue-500 animate-pulse" />
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Quick Match Personas</h3>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {PERSONAS.map(p => {
                     const isActive = activePersona === p.name;
                     return (
@@ -1151,7 +1151,7 @@ export default function App() {
 
                           setFilters(nextFilters);
                         }}
-                        className={`flex flex-col items-start text-left p-3 rounded-xl border transition-all duration-300 relative overflow-hidden ${
+                        className={`flex flex-col items-start text-left p-2.5 sm:p-3 rounded-xl border transition-all duration-300 relative overflow-hidden ${
                           isActive 
                             ? "bg-white dark:bg-neutral-850 border-blue-500 ring-2 ring-blue-500/20 shadow-md translate-y-[-2px]" 
                             : "bg-white/60 dark:bg-neutral-900/60 border-neutral-200/80 dark:border-neutral-800/80 hover:bg-white dark:hover:bg-neutral-850 hover:border-neutral-300 dark:hover:border-neutral-700"
@@ -1169,8 +1169,8 @@ export default function App() {
                         }`}>
                           {p.icon}
                         </div>
-                        <span className="text-[11px] font-black text-neutral-800 dark:text-neutral-200">{p.name}</span>
-                        <span className="text-[9px] text-neutral-450 dark:text-neutral-500 mt-0.5 line-clamp-1 leading-normal">{p.desc}</span>
+                        <span className="text-[10px] sm:text-[11px] font-black text-neutral-800 dark:text-neutral-200">{p.name}</span>
+                        <span className="text-[8px] sm:text-[9px] text-neutral-450 dark:text-neutral-500 mt-0.5 line-clamp-1 leading-normal">{p.desc}</span>
                       </button>
                     );
                   })}
@@ -1195,7 +1195,7 @@ export default function App() {
                   <p className="font-semibold text-neutral-700 text-sm sm:text-base">{loading ? "Loading..." : `${finalSortedPhones.length} matches`}</p>
                   
                   {/* Quick Sort Tabs */}
-                  <div className="hidden md:flex items-center bg-neutral-100 p-1 rounded-lg border border-neutral-200/60">
+                  <div className="flex items-center bg-neutral-100 p-0.5 sm:p-1 rounded-lg border border-neutral-200/60 overflow-x-auto hide-scrollbar">
                     {[
                       { id: "performance", label: "Processor", icon: <Zap size={12} /> },
                       { id: "camera", label: "Camera", icon: <Camera size={12} /> },
@@ -1227,12 +1227,12 @@ export default function App() {
               </div>
 
               {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
                   <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
                     {finalSortedPhones.slice(0, visibleCount).map((phone) => (
                       <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={filters.weights} onSelect={() => setSelectedPhoneId(phone.id)} badges={badges[phone.id]} userPhone={userPhone} />
                     ))}
