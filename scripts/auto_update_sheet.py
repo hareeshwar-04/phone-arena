@@ -175,7 +175,9 @@ def estimate_bloat_from_brand(brand):
         "apple": (2, 1), "google": (3, 1), "nothing": (3, 1), "motorola": (4, 1),
         "oneplus": (6, 2), "samsung": (10, 3), "realme": (14, 3), "oppo": (14, 3),
         "vivo": (12, 3), "iqoo": (13, 3), "xiaomi": (16, 3), "poco": (20, 4),
-        "redmi": (20, 4), "cmf": (2, 1)
+        "redmi": (20, 4), "cmf": (2, 1), "lava": (8, 2), "hmd": (4, 1),
+        "nokia": (4, 1), "asus": (5, 2), "honor": (10, 2), "infinix": (14, 3),
+        "tecno": (14, 3)
     }
     for key, val in bloat_map.items():
         if key in b: return val
@@ -274,7 +276,7 @@ def estimate_launch_date(cpu_name: str) -> str:
 
 def scrape_live_phones(limit=1500) -> list[dict]:
     phones = []
-    brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno"]
+    brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno", "lava", "hmd", "nokia", "asus", "honor"]
     
     for brand in brands:
         if len(phones) >= limit: break

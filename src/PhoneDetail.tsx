@@ -419,7 +419,7 @@ export function PhoneDetail({ phone, allPhones, onSelectPhone, onClose, weights,
                     <SpecItem icon={<Smartphone size={18} />} label="Memory Type" value={phone.storage_type} subValue={`${phone.ram_type} RAM`} />
                     <SpecItem icon={<Shield size={18} />} label="Durability & OS" value={`${phone.os_updates_years} Years OS Updates`} subValue={`${(() => {
                       const b = phone.brand.toLowerCase();
-                      const skinMap: Record<string, string> = { samsung: "One UI", apple: "iOS", oneplus: "OxygenOS", xiaomi: "HyperOS", redmi: "HyperOS", poco: "HyperOS", realme: "Realme UI", oppo: "ColorOS", vivo: "Funtouch OS", iqoo: "Funtouch OS", google: "Stock Android", motorola: "Near-Stock Android", nothing: "Nothing OS", honor: "MagicOS" };
+                      const skinMap: Record<string, string> = { samsung: "One UI", apple: "iOS", oneplus: "OxygenOS", xiaomi: "HyperOS", redmi: "HyperOS", poco: "HyperOS", realme: "Realme UI", oppo: "ColorOS", vivo: "Funtouch OS", iqoo: "Funtouch OS", google: "Stock Android", motorola: "Near-Stock Android", nothing: "Nothing OS", honor: "MagicOS", cmf: "Nothing OS", lava: "Stock Android", hmd: "Stock Android", nokia: "Stock Android", asus: "ZenUI", infinix: "XOS", tecno: "HiOS" };
                       return skinMap[b] || "Custom Android";
                     })()} · ${osStatus.message} (Launch: ${formatLaunchDate(phone.launch_date)})`} />
                     <SpecItem icon={<Shield size={18} />} label="Cost of Ownership" value={`${formatINR(Math.round(phone.price_inr / Math.max(0.5, osStatus.yearsLeft)))} / yr`} subValue={`${osStatus.yearsLeft.toFixed(1)} support years remaining`} />

@@ -301,6 +301,12 @@ function parseSheetRow(row: Record<string, string>): PhoneSpec {
   else if (b === "XIAOMI") brand = "Xiaomi";
   else if (b === "INFINIX") brand = "Infinix";
   else if (b === "TECNO") brand = "Tecno";
+  else if (b === "LAVA") brand = "Lava";
+  else if (b === "HMD") brand = "HMD";
+  else if (b === "NOKIA") brand = "Nokia";
+  else if (b === "ASUS") brand = "Asus";
+  else if (b === "HONOR") brand = "Honor";
+  else if (b === "CMF") brand = "CMF";
 
   let name = (row.name || "").trim();
   // Strip 5G case-insensitively
