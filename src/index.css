@@ -228,48 +228,48 @@ input[type="range"]::-moz-range-thumb {
   --tw-gradient-to: #a3a3a3 !important;
 }
 
-/* ===== Dark Mode Theme Overrides ===== */
+/* ===== Dark Mode Theme Overrides (Pitch Black / AMOLED) ===== */
 .dark {
   color-scheme: dark;
 }
 .dark, 
 .dark body {
-  background-color: #0b0f17 !important;
-  color: #f1f5f9 !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
 }
 
-/* Backgrounds */
+/* Backgrounds - Pitch Black everywhere */
 .dark .bg-white {
-  background-color: #121824 !important;
+  background-color: #000000 !important;
 }
 .dark .bg-neutral-50 {
-  background-color: #0b0f17 !important;
+  background-color: #000000 !important;
 }
 .dark .bg-neutral-100 {
-  background-color: #1a2333 !important;
+  background-color: #0d0d0d !important;
 }
 .dark .bg-neutral-150 {
-  background-color: #242f44 !important;
+  background-color: #141414 !important;
 }
 .dark .bg-blue-50\/40,
 .dark .bg-blue-50\/50,
 .dark .bg-blue-50 {
-  background-color: rgba(30, 41, 59, 0.4) !important;
+  background-color: rgba(38, 38, 38, 0.6) !important;
 }
 .dark .bg-orange-50 {
-  background-color: rgba(249, 115, 22, 0.1) !important;
+  background-color: rgba(249, 115, 22, 0.08) !important;
 }
 .dark .bg-purple-50 {
-  background-color: rgba(168, 85, 247, 0.1) !important;
+  background-color: rgba(168, 85, 247, 0.08) !important;
 }
 .dark .bg-rose-50 {
-  background-color: rgba(244, 63, 94, 0.15) !important;
+  background-color: rgba(244, 63, 94, 0.1) !important;
 }
 .dark .bg-amber-50 {
-  background-color: rgba(245, 158, 11, 0.1) !important;
+  background-color: rgba(245, 158, 11, 0.08) !important;
 }
 
-/* Borders */
+/* Borders - High-visibility subtle border lines */
 .dark .border-neutral-100,
 .dark .border-neutral-100\/50,
 .dark .border-neutral-200,
@@ -285,65 +285,67 @@ input[type="range"]::-moz-range-thumb {
 .dark .border-amber-250,
 .dark .border-red-150,
 .dark .border-red-200 {
-  border-color: #1e293b !important;
+  border-color: #262626 !important;
 }
 
-/* Texts */
+/* Texts - Maximum Font Visibility */
 .dark .text-neutral-900,
-.dark .text-neutral-800,
 .dark .text-neutral-850 {
-  color: #f1f5f9 !important;
+  color: #ffffff !important;
 }
-.dark .text-neutral-700,
+.dark .text-neutral-800,
+.dark .text-neutral-700 {
+  color: #f3f4f6 !important; /* Extremely bright neutral */
+}
 .dark .text-neutral-600,
 .dark .text-neutral-650 {
-  color: #cbd5e1 !important;
+  color: #e5e7eb !important; /* Bright gray */
 }
 .dark .text-neutral-500,
 .dark .text-neutral-400 {
-  color: #94a3b8 !important;
+  color: #cbd5e1 !important; /* Clearly readable secondary labels */
 }
 
 /* Input Fields and Selectors */
 .dark input[type="text"],
 .dark select {
-  background-color: #121824 !important;
-  color: #f1f5f9 !important;
-  border-color: #1e293b !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #262626 !important;
 }
 
 /* Buttons */
 .dark .bg-neutral-100.text-neutral-700 {
-  background-color: #1a2333 !important;
-  color: #e2e8f0 !important;
+  background-color: #141414 !important;
+  color: #ffffff !important;
 }
 .dark .hover\:bg-neutral-200:hover {
-  background-color: #242f44 !important;
+  background-color: #1c1c1c !important;
 }
 .dark .hover\:bg-neutral-50:hover {
-  background-color: #1a2333 !important;
+  background-color: #0d0d0d !important;
 }
 .dark .hover\:bg-white:hover {
-  background-color: #1e293b !important;
+  background-color: #141414 !important;
 }
 
 /* Scrollbar */
 .dark ::-webkit-scrollbar-track {
-  background: #0b0f17;
+  background: #000000;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #262626;
 }
 
 /* Wizard Overlay and Modal Box */
 .dark .bg-neutral-900\/60 {
-  background-color: rgba(0, 0, 0, 0.75) !important;
+  background-color: rgba(0, 0, 0, 0.85) !important;
 }
 .dark .shadow-2xl {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9) !important;
 }
 .dark .bg-gradient-to-r.from-neutral-900 {
-  background-image: linear-gradient(to right, #090d16, #121824) !important;
+  background-image: linear-gradient(to right, #000000, #0a0a0a) !important;
 }
 
 /* Image Container Backgrounds */
