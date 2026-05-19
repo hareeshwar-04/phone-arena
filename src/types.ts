@@ -17,7 +17,16 @@ export interface FilterConfig {
 export const DEFAULT_FILTERS: FilterConfig = {
   selectedBrands: [],
   priceRange: [5000, 200000],
-  weights: { gaming: 50, durability: 50, camera: 50 },
+  weights: {
+    performance: 50,
+    reliability: 50,
+    camera: 50,
+    os: 50,
+    performanceEnabled: true,
+    reliabilityEnabled: false,
+    cameraEnabled: false,
+    osEnabled: false
+  },
   batteryMin: 0,
   chargingMin: 0,
   refreshRateMin: 0,
@@ -57,12 +66,13 @@ export interface PhoneSpec {
   screen_type: string;
 }
 
-/** Computed persona ratings derived from the formula engine */
+/** Computed persona ratings derived from the formula engine (v3 scoring) */
 export interface PersonaRatings {
-  durability: number;
-  gaming: number;
-  creator: number;
-  vfm: number;
+  performance: number;   // AnTuTu + refresh rate + charging speed + RAM/storage tier
+  camera: number;        // Main + front camera quality + display quality bonus
+  reliability: number;   // OS updates + UI quality + battery life + build quality
+  os: number;            // Dedicated operating system rating from tier matrix
+  vfm: number;           // Market-calibrated value: specs-per-rupee ratio
 }
 
 /** A phone with its computed ratings attached */
@@ -72,9 +82,14 @@ export interface PhoneWithRatings extends PhoneSpec {
 
 /** Weight configuration for custom sorting */
 export interface WeightConfig {
-  gaming: number;
-  durability: number;
+  performance: number;
+  reliability: number;
   camera: number;
+  os: number;
+  performanceEnabled: boolean;
+  reliabilityEnabled: boolean;
+  cameraEnabled: boolean;
+  osEnabled: boolean;
 }
 
 // ============================================================

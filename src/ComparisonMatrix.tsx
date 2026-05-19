@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Zap, Camera, Shield, Star, BookOpen } from "lucide-react";
+import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone } from "lucide-react";
 import type { PhoneWithRatings } from "./types";
 import { formatINR } from "./types";
 import { useVerdict } from "./hooks";
@@ -53,18 +53,20 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
     { label: "Selfie Camera", key: "sel", getValue: (p) => p.front_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "Build Quality", key: "bld", getValue: (p) => p.build_quality_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "OS Updates", key: "upd", getValue: (p) => p.os_updates_years, fmt: (v) => `${v} yrs`, higherBetter: true },
-    { label: "Gaming Score", key: "g", getValue: (p) => p.ratings.gaming, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
-    { label: "Reliability", key: "d", getValue: (p) => p.ratings.durability, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
-    { label: "Camera Score", key: "c", getValue: (p) => p.ratings.creator, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
+    { label: "Performance Score", key: "g", getValue: (p) => p.ratings.performance, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
+    { label: "Reliability", key: "d", getValue: (p) => p.ratings.reliability, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
+    { label: "Camera Score", key: "c", getValue: (p) => p.ratings.camera, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
+    { label: "OS Rating", key: "os", getValue: (p) => p.ratings.os, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Value Score", key: "v", getValue: (p) => p.ratings.vfm, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
   ];
 
   if (virtualPhones.length === 0) return null;
 
   // Calculate Winners
-  const gamingWinner = virtualPhones.reduce((prev, curr) => (prev.raw_cpu_score > curr.raw_cpu_score) ? prev : curr);
-  const cameraWinner = virtualPhones.reduce((prev, curr) => (prev.main_camera_score > curr.main_camera_score) ? prev : curr);
-  const durabilityWinner = virtualPhones.reduce((prev, curr) => (prev.os_updates_years + prev.build_quality_score > curr.os_updates_years + curr.build_quality_score) ? prev : curr);
+  const performanceWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.performance > curr.ratings.performance) ? prev : curr);
+  const cameraWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.camera > curr.ratings.camera) ? prev : curr);
+  const reliabilityWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.reliability > curr.ratings.reliability) ? prev : curr);
+  const osWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.os > curr.ratings.os) ? prev : curr);
   const vfmWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.vfm > curr.ratings.vfm) ? prev : curr);
 
   return (
@@ -147,14 +149,14 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Gaming & Performance */}
             <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 text-neutral-500 mb-3">
+               <div className="flex items-center gap-2 text-neutral-500 mb-3">
                 <Zap size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Best for Performance</span>
               </div>
-              <p className="text-neutral-900 font-extrabold text-lg">{gamingWinner.name}</p>
-              <p className="text-neutral-500 text-xs mt-1">Powered by <strong className="text-neutral-700">{gamingWinner.cpu_name}</strong></p>
+              <p className="text-neutral-900 font-extrabold text-lg">{performanceWinner.name}</p>
+              <p className="text-neutral-500 text-xs mt-1">Powered by <strong className="text-neutral-700">{performanceWinner.cpu_name}</strong></p>
               <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
                 <span>Source: AnTuTu / Geekbench</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {gamingWinner.raw_cpu_score.toFixed(1)}/10</span>
+                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {performanceWinner.ratings.performance.toFixed(1)}/10</span>
               </div>
             </div>
 
@@ -167,7 +169,7 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
               <p className="text-neutral-500 text-xs mt-1">Highest hardware capability</p>
               <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
                 <span>Source: DXOMARK Standards</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {cameraWinner.main_camera_score.toFixed(1)}/10</span>
+                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {cameraWinner.ratings.camera.toFixed(1)}/10</span>
               </div>
             </div>
             
@@ -176,11 +178,24 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
               <div className="flex items-center gap-2 text-neutral-500 mb-3">
                 <Shield size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Long-Term Reliability</span>
               </div>
-              <p className="text-neutral-900 font-extrabold text-lg">{durabilityWinner.name}</p>
-              <p className="text-neutral-500 text-xs mt-1">{durabilityWinner.os_updates_years} Years OS Updates + Top Build</p>
+              <p className="text-neutral-900 font-extrabold text-lg">{reliabilityWinner.name}</p>
+              <p className="text-neutral-500 text-xs mt-1">{reliabilityWinner.os_updates_years} Years OS Updates + Top Build</p>
               <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
                 <span>Source: OEM Policies</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {durabilityWinner.build_quality_score.toFixed(1)}/10</span>
+                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {reliabilityWinner.ratings.reliability.toFixed(1)}/10</span>
+              </div>
+            </div>
+
+            {/* OS Experience */}
+            <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 text-neutral-500 mb-3">
+                <Smartphone size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Best OS Experience</span>
+              </div>
+              <p className="text-neutral-900 font-extrabold text-lg">{osWinner.name}</p>
+              <p className="text-neutral-500 text-xs mt-1">Premium and bloat-free UI tier rating</p>
+              <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
+                <span>Source: OS Curation Matrix</span>
+                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {osWinner.ratings.os.toFixed(1)}/10</span>
               </div>
             </div>
 

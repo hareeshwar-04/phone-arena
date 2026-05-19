@@ -1,6 +1,6 @@
 import {
   SlidersHorizontal, Zap, Shield, Camera, Wrench, ChevronDown,
-  Battery, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, Sparkles
+  Battery, Monitor, Cpu, HardDrive, MemoryStick, RefreshCw, Sparkles, Smartphone
 } from "lucide-react";
 import { useState, useCallback } from "react";
 import type { WeightConfig, FilterConfig } from "./types";
@@ -193,42 +193,59 @@ export function FilterSidebar({
         </div>
       </CollapsibleSection>
 
-      {/* Tuning Priority */}
       <CollapsibleSection title="Tuning Priority" icon={<Wrench size={14} />} defaultOpen={true}>
         <div className="pb-1">
           {[
-            { key: "gaming" as const, label: "Performance", icon: <Zap size={14} />, },
-            { key: "durability" as const, label: "Reliability", icon: <Shield size={14} />, },
+            { key: "performance" as const, label: "Performance", icon: <Zap size={14} />, },
+            { key: "reliability" as const, label: "Reliability", icon: <Shield size={14} />, },
             { key: "camera" as const, label: "Camera", icon: <Camera size={14} />, },
-          ].map((s) => (
-            <div key={s.key} className="mb-3 last:mb-0">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-semibold flex items-center gap-1.5 text-neutral-700">{s.icon} {s.label}</span>
+            { key: "os" as const, label: "OS Rating", icon: <Smartphone size={14} />, },
+          ].map((s) => {
+            const enabledKey = `${s.key}Enabled` as keyof WeightConfig;
+            const isEnabled = filters.weights[enabledKey] !== false;
+            return (
+              <div key={s.key} className="mb-3.5 last:mb-0">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className={`text-[11px] font-semibold flex items-center gap-1.5 transition-colors duration-200 ${isEnabled ? "text-neutral-700" : "text-neutral-400"}`}>
+                    {s.icon} {s.label}
+                  </span>
+                  <button
+                    onClick={() => updateWeights({ [enabledKey]: !isEnabled } as any)}
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded transition-all duration-200 uppercase tracking-wider border cursor-pointer ${
+                      isEnabled 
+                        ? "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100" 
+                        : "bg-neutral-50 text-neutral-400 border-neutral-200 hover:bg-neutral-100"
+                    }`}
+                  >
+                    {isEnabled ? "Active" : "Off"}
+                  </button>
+                </div>
+                <div className={`flex rounded-lg bg-neutral-100 p-0.5 border border-neutral-200/50 transition-all duration-200 ${!isEnabled ? "opacity-35 pointer-events-none select-none" : ""}`}>
+                  {[
+                    { label: "Low", value: 10 },
+                    { label: "Med", value: 50 },
+                    { label: "High", value: 100 }
+                  ].map((level) => {
+                    const isSelected = Math.abs(filters.weights[s.key] - level.value) <= 20 || filters.weights[s.key] === level.value;
+                    return (
+                      <button
+                        key={level.label}
+                        disabled={!isEnabled}
+                        onClick={() => updateWeights({ [s.key]: level.value })}
+                        className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all duration-200 ${
+                          isSelected
+                            ? "bg-white text-blue-600 shadow-sm ring-1 ring-neutral-200/50"
+                            : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
+                        }`}
+                      >
+                        {level.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex rounded-lg bg-neutral-100 p-0.5 border border-neutral-200/50">
-                {[
-                  { label: "Low", value: 10 },
-                  { label: "Med", value: 50 },
-                  { label: "High", value: 100 }
-                ].map((level) => {
-                  const isSelected = Math.abs(filters.weights[s.key] - level.value) <= 20 || filters.weights[s.key] === level.value;
-                  return (
-                    <button
-                      key={level.label}
-                      onClick={() => updateWeights({ [s.key]: level.value })}
-                      className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all duration-200 ${
-                        isSelected
-                          ? "bg-white text-blue-600 shadow-sm ring-1 ring-neutral-200/50"
-                          : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
-                      }`}
-                    >
-                      {level.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CollapsibleSection>
 

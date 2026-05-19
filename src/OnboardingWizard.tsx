@@ -44,7 +44,7 @@ const BUDGET_OPTIONS: { key: BudgetTier; label: string; range: string; emoji: st
 
 const BRAND_OPTIONS = [
   "Samsung", "Apple", "OnePlus", "Xiaomi", "Realme", "POCO",
-  "Vivo", "Oppo", "Motorola", "Nothing", "iQOO", "Google"
+  "Vivo", "OPPO", "Motorola", "Nothing", "iQOO", "Google"
 ];
 
 const PRIORITY_OPTIONS: { key: string; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -78,23 +78,38 @@ function buildFiltersFromWizard(state: WizardState): FilterConfig {
   }
 
   // Usage → weight mapping
-  let gamingW = 50, durabilityW = 50, cameraW = 50;
+  let performanceW = 50, reliabilityW = 50, cameraW = 50, osW = 50;
 
-  if (state.usage.includes("gaming")) { gamingW = 100; }
+  if (state.usage.includes("gaming")) { performanceW = 100; }
   if (state.usage.includes("photography")) { cameraW = 100; }
-  if (state.usage.includes("daily")) { durabilityW = 70; cameraW = 70; }
-  if (state.usage.includes("work")) { durabilityW = 80; }
-  if (state.usage.includes("student")) { durabilityW = 90; }
+  if (state.usage.includes("daily")) { reliabilityW = 70; cameraW = 70; osW = 80; }
+  if (state.usage.includes("work")) { reliabilityW = 80; osW = 80; }
+  if (state.usage.includes("student")) { reliabilityW = 90; }
 
   // Priority overrides
-  if (state.priorityPerformance) { gamingW = Math.max(gamingW, 100); }
+  if (state.priorityPerformance) { performanceW = Math.max(performanceW, 100); }
   if (state.priorityCamera) { cameraW = Math.max(cameraW, 100); }
-  if (state.priorityDurability) { durabilityW = Math.max(durabilityW, 100); }
+  if (state.priorityDurability) { reliabilityW = Math.max(reliabilityW, 100); osW = Math.max(osW, 100); }
   if (state.priorityBattery) { filters.batteryMin = 5000; }
   if (state.fastCharging) { filters.chargingMin = 65; }
   if (state.priorityDisplay) { filters.refreshRateMin = 120; }
 
-  filters.weights = { gaming: gamingW, durability: durabilityW, camera: cameraW };
+  const perfEnabled = state.priorityPerformance || state.usage.includes("gaming");
+  const relEnabled = state.priorityDurability || state.usage.includes("student");
+  const camEnabled = state.priorityCamera || state.usage.includes("photography");
+  const osEnabled = state.priorityDurability || state.usage.includes("daily") || state.usage.includes("work");
+  const hasAnyEnabled = perfEnabled || relEnabled || camEnabled || osEnabled;
+
+  filters.weights = { 
+    performance: performanceW, 
+    reliability: reliabilityW, 
+    camera: cameraW, 
+    os: osW,
+    performanceEnabled: perfEnabled || !hasAnyEnabled,
+    reliabilityEnabled: relEnabled,
+    cameraEnabled: camEnabled,
+    osEnabled: osEnabled
+  };
 
   // Brand preference
   if (state.preferredBrands.length > 0) {

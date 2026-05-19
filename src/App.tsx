@@ -11,7 +11,7 @@ import { OnboardingWizard } from "./OnboardingWizard";
 
 const SHEET_URL = "https://opensheet.elk.sh/1yhvi3qx40ijUz2RyQ7Vojfxx3ZGoyWcaUgTisWfOGmM/Sheet1";
 type ViewMode = "discover" | "compare";
-type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "battery" | "newest";
+type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "os" | "battery" | "newest";
 
 function parseSheetRow(row: Record<string, string>): PhoneSpec {
   return {
@@ -43,12 +43,26 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("pa_wizard_done"));
   const [filters, setFilters] = useState<FilterConfig>(() => {
-    const saved = localStorage.getItem("pa_filters");
-    return saved ? JSON.parse(saved) : { ...DEFAULT_FILTERS };
+    const saved = localStorage.getItem("pa_filters_v2");
+    if (!saved) return { ...DEFAULT_FILTERS };
+    try {
+      const parsed = JSON.parse(saved);
+      const weights = { ...DEFAULT_FILTERS.weights, ...parsed.weights };
+      // Migrate old weight keys if they exist
+      if (parsed.weights?.gaming !== undefined && parsed.weights?.performance === undefined) {
+        weights.performance = parsed.weights.gaming;
+      }
+      if (parsed.weights?.durability !== undefined && parsed.weights?.reliability === undefined) {
+        weights.reliability = parsed.weights.durability;
+      }
+      return { ...DEFAULT_FILTERS, ...parsed, weights };
+    } catch {
+      return { ...DEFAULT_FILTERS };
+    }
   });
 
   // Persist filters
-  useEffect(() => { localStorage.setItem("pa_filters", JSON.stringify(filters)); }, [filters]);
+  useEffect(() => { localStorage.setItem("pa_filters_v2", JSON.stringify(filters)); }, [filters]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,8 +133,9 @@ export default function App() {
     if (sortBy === "match") return list;
     if (sortBy === "price_asc") return list.sort((a, b) => a.price_inr - b.price_inr);
     if (sortBy === "price_desc") return list.sort((a, b) => b.price_inr - a.price_inr);
-    if (sortBy === "performance") return list.sort((a, b) => b.raw_cpu_score - a.raw_cpu_score);
-    if (sortBy === "camera") return list.sort((a, b) => b.main_camera_score - a.main_camera_score);
+    if (sortBy === "performance") return list.sort((a, b) => b.ratings.performance - a.ratings.performance);
+    if (sortBy === "camera") return list.sort((a, b) => b.ratings.camera - a.ratings.camera);
+    if (sortBy === "os") return list.sort((a, b) => b.ratings.os - a.ratings.os);
     if (sortBy === "battery") return list.sort((a, b) => b.battery_mah - a.battery_mah);
     if (sortBy === "newest") return list.sort((a, b) => b.launch_date.localeCompare(a.launch_date));
     return list;
@@ -135,8 +150,8 @@ export default function App() {
       const sorted = [...filteredPhones].sort((a, b) => key(b) - key(a));
       if (sorted[0]) addBadge(sorted[0].id, badge);
     };
-    best(p => p.ratings.gaming, "⚡ Best Performance");
-    best(p => p.ratings.creator, "📸 Best Camera");
+    best(p => p.ratings.performance, "⚡ Best Performance");
+    best(p => p.ratings.camera, "📸 Best Camera");
     best(p => p.ratings.vfm, "💎 Best Value");
     best(p => p.battery_mah, "🔋 Best Battery");
     return map;
@@ -329,6 +344,7 @@ export default function App() {
                     <option value="price_desc">Price: High to Low</option>
                     <option value="performance">Best Performance</option>
                     <option value="camera">Best Camera</option>
+                    <option value="os">Best Operating System</option>
                     <option value="battery">Largest Battery</option>
                     <option value="newest">Newest First</option>
                   </select>

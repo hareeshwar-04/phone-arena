@@ -204,26 +204,43 @@ def parse_number(text: str) -> int:
     nums = re.findall(r'[\d,]+', text.replace(",", ""))
     return int(nums[0]) if nums else 0
 
-def scrape_live_phones(limit=200) -> list[dict]:
+def estimate_launch_date(cpu_name: str) -> str:
+    name = cpu_name.lower()
+    if any(x in name for x in ["elite", "gen 5", "9500", "a19", "a18"]):
+        return "2025-10"
+    if any(x in name for x in ["gen 4", "9400", "g5"]):
+        return "2025-02"
+    if any(x in name for x in ["gen 3", "9300", "8300", "7+ gen 3", "g4", "a17"]):
+        return "2024-05"
+    if any(x in name for x in ["gen 2", "9200", "8200", "7+ gen 2", "g3", "a16"]):
+        return "2023-06"
+    if any(x in name for x in ["gen 1", "9000", "8100", "g2", "a15", "778g"]):
+        return "2022-08"
+    return "2024-09"
+
+def scrape_live_phones(limit=1500) -> list[dict]:
     phones = []
     brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno"]
     
     for brand in brands:
         if len(phones) >= limit: break
-        url = f"https://www.smartprix.com/mobiles/{brand}-brand"
-        logger.info(f"Fetching {brand}: {url}")
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/115.0'})
-        try:
-            resp = urllib.request.urlopen(req, timeout=15)
-            html = resp.read().decode('utf-8')
-        except Exception as e:
-            logger.warning(f"Failed to fetch {brand}: {e}")
-            continue
-        
-        soup = BeautifulSoup(html, "html.parser")
-        cards = soup.select("div.sm-product")
-        if not cards:
-            continue
+        for page in range(1, 6): # Fetch up to 5 pages per brand
+            if len(phones) >= limit: break
+            url = f"https://www.smartprix.com/mobiles/{brand}-brand?page={page}"
+            logger.info(f"Fetching {brand} (Page {page}): {url}")
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/115.0'})
+            try:
+                resp = urllib.request.urlopen(req, timeout=15)
+                html = resp.read().decode('utf-8')
+            except Exception as e:
+                logger.warning(f"Failed to fetch {brand} page {page}: {e}")
+                break # If page fails or is out of bounds, skip to next brand
+            
+            soup = BeautifulSoup(html, "html.parser")
+            cards = soup.select("div.sm-product")
+            if not cards:
+                logger.info(f"No more cards found for {brand} on page {page}. Moving to next brand.")
+                break
             
         for card in cards:
             if len(phones) >= limit: break
@@ -309,11 +326,11 @@ def scrape_live_phones(limit=200) -> list[dict]:
                         
             phones.append({
                 "id": re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-'),
-                "brand": name.split()[0] if name else "Unknown",
+                "brand": (name.split()[0] if name else "Unknown").replace("Oppo", "OPPO").replace("oppo", "OPPO").replace("Iqoo", "iQOO").replace("iqoo", "iQOO").replace("Poco", "POCO").replace("poco", "POCO"),
                 "name": name,
                 "price_inr": price,
                 "image_url": img_url,
-                "launch_date": datetime.now().strftime("%Y-%m"),
+                "launch_date": estimate_launch_date(cpu_name),
                 "cpu_name": cpu_name,
                 "battery_mah": battery_mah,
                 "charging_w": charging_w,
@@ -322,7 +339,7 @@ def scrape_live_phones(limit=200) -> list[dict]:
                 "main_camera_mp": main_mp,
                 "front_camera_mp": front_mp,
             })
-        time.sleep(1.0)
+        time.sleep(0.5)
         
     return phones
 
@@ -400,7 +417,7 @@ def main():
     logger.info(f"PhoneArena Bot — Fetching 200 Live Phones ({datetime.utcnow().isoformat()})")
     logger.info("=" * 60)
 
-    phones = scrape_live_phones(limit=350)
+    phones = scrape_live_phones(limit=1500)
     
     # Deduplicate
     seen = set()
@@ -409,7 +426,7 @@ def main():
         if p["id"] not in seen:
             seen.add(p["id"])
             unique.append(p)
-    phones = unique[:300]
+    phones = unique[:1200]
     
     logger.info(f"Normalizing {len(phones)} unique devices...")
     rows = [build_sheet_row(p) for p in phones]
