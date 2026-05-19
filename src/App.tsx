@@ -46,6 +46,7 @@ export default function App() {
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("pa_wizard_done"));
   const [showSpecGuide, setShowSpecGuide] = useState(false);
   const [showTooltip, setShowTooltip] = useState(() => !localStorage.getItem("pa_spec_tooltip_done"));
+  const [showWizardTooltip, setShowWizardTooltip] = useState(() => !localStorage.getItem("pa_wizard_tooltip_done"));
   const [filters, setFilters] = useState<FilterConfig>(() => {
     const saved = localStorage.getItem("pa_filters_v2");
     if (!saved) return { ...DEFAULT_FILTERS };
@@ -296,9 +297,31 @@ export default function App() {
               )}
             </div>
             {/* Re-open wizard */}
-            <button onClick={() => setShowWizard(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200/50 text-xs font-semibold text-blue-700 hover:from-blue-100 hover:to-violet-100 transition-colors" title="Re-run phone finder wizard">
-              <Sparkles size={14} /> Find My Phone
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => { setShowWizard(true); setShowWizardTooltip(false); localStorage.setItem("pa_wizard_tooltip_done", "true"); }} 
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200/50 text-xs font-semibold text-blue-700 hover:from-blue-100 hover:to-violet-100 transition-colors" 
+                title="Re-run phone finder wizard"
+              >
+                <Sparkles size={14} /> Find My Phone
+              </button>
+              {showWizardTooltip && (
+                <div className="absolute top-full mt-2.5 right-0 w-60 bg-gradient-to-br from-blue-600 to-indigo-650 text-white rounded-xl p-3 shadow-xl z-50 border border-blue-700 animate-float-subtle">
+                  <div className="absolute bottom-full right-6 w-3 h-3 bg-blue-600 rotate-45 border-l border-t border-blue-700 transform translate-y-1.5" />
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[11px] font-semibold leading-relaxed">
+                      Need to find a phone fast? Use our smart finder wizard! ⚡
+                    </p>
+                    <button 
+                      onClick={() => { setShowWizardTooltip(false); localStorage.setItem("pa_wizard_tooltip_done", "true"); }} 
+                      className="text-blue-200 hover:text-white flex-shrink-0 mt-0.5"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         {/* Mobile search */}
