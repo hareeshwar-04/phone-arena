@@ -1,4 +1,4 @@
-import { X, ExternalLink, Cpu, Battery, Camera, Monitor, Shield, Smartphone, Zap, Star } from "lucide-react";
+import { X, ExternalLink, Cpu, Battery, Camera, Monitor, Shield, Smartphone, Zap, Star, ShoppingCart } from "lucide-react";
 import type { PhoneWithRatings } from "./types";
 import { formatINR } from "./types";
 
@@ -9,8 +9,8 @@ interface Props {
 
 export function PhoneDetail({ phone, onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-neutral-900/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in-up" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 md:p-6 bg-neutral-900/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="bg-white sm:rounded-xl shadow-2xl w-full h-[95dvh] sm:h-auto max-w-3xl sm:max-h-[90vh] overflow-hidden flex flex-col animate-fade-in-up rounded-t-2xl" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-neutral-100 bg-white">
           <div>
@@ -27,16 +27,52 @@ export function PhoneDetail({ phone, onClose }: Props) {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left Column - Image & Price */}
             <div className="w-full md:w-1/3 flex-shrink-0 flex flex-col items-center">
-              <div className="w-full aspect-[3/4] bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm mb-6 relative">
-                <img src={phone.image_url} alt={phone.name} className="w-full h-full object-cover" />
+              <div className="w-48 sm:w-64 md:w-full aspect-[3/4] bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm mb-6 relative">
+                <img src={phone.image_url} alt={phone.name} className="w-full h-full object-contain mix-blend-multiply p-4" />
                 <div className="absolute top-3 left-3 bg-neutral-900/80 backdrop-blur text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">
                   {phone.antutu_score.toLocaleString()} AnTuTu
                 </div>
               </div>
               
               <div className="text-center w-full bg-white p-5 rounded-xl border border-neutral-200 shadow-sm min-h-[160px]">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 mb-4 pb-2 border-b border-neutral-100">Live Web Pricing</p>
-                <LivePriceFetcher phoneName={phone.name} />
+                <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 mb-2">Estimated Price</p>
+                <p className="text-3xl font-black text-neutral-900 mb-4">{formatINR(phone.price_inr)}</p>
+                
+                <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 mb-3 pb-2 border-b border-neutral-100">Buy Now</p>
+                
+                {/* Affiliate Link Slots */}
+                <div className="space-y-2.5">
+                  <a 
+                    href={`https://www.amazon.in/s?k=${encodeURIComponent(phone.name)}&tag=YOUR_AMAZON_AFFILIATE_ID_HERE`}
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-orange-50 hover:border-orange-200 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-white border border-neutral-200 p-0.5 flex items-center justify-center">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon" className="max-w-full max-h-full object-contain" />
+                      </div>
+                      <span className="text-xs font-bold text-neutral-700 group-hover:text-orange-700">Amazon</span>
+                    </div>
+                    <ExternalLink size={14} className="text-neutral-400 group-hover:text-orange-500" />
+                  </a>
+
+                  <a 
+                    href={`https://www.flipkart.com/search?q=${encodeURIComponent(phone.name)}&affid=YOUR_FLIPKART_AFFILIATE_ID_HERE`}
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-blue-50 hover:border-blue-200 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-white border border-neutral-200 p-0.5 flex items-center justify-center">
+                        <img src="https://static-assets-web.flixcart.com/batman-returns/batman-returns/p/images/fkheaderlogo_exploreplus-44005d.svg" alt="Flipkart" className="max-w-full max-h-full object-contain" />
+                      </div>
+                      <span className="text-xs font-bold text-neutral-700 group-hover:text-blue-700">Flipkart</span>
+                    </div>
+                    <ExternalLink size={14} className="text-neutral-400 group-hover:text-blue-500" />
+                  </a>
+                </div>
+
               </div>
             </div>
             
@@ -88,65 +124,4 @@ function ScoreCard({ icon, title, score, color, bg, border }: any) {
       <p className={`text-xl font-black ${color}`}>{score.toFixed(1)}<span className="text-[10px] text-neutral-400 font-bold ml-0.5">/10</span></p>
     </div>
   )
-}
-
-import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
-
-function LivePriceFetcher({ phoneName }: { phoneName: string }) {
-  const [loading, setLoading] = useState(true);
-  const [prices, setPrices] = useState<any[]>([]);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`http://localhost:8000/api/live-prices?q=${encodeURIComponent(phoneName)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.results) {
-          setPrices(data.results);
-        } else {
-          setError(true);
-        }
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [phoneName]);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-24 gap-3">
-        <Loader2 size={24} className="text-blue-500 animate-spin" />
-        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest animate-pulse">Running live web scraper...</p>
-      </div>
-    );
-  }
-
-  if (error || prices.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-24">
-        <p className="text-xs font-bold text-neutral-500 mb-2">No live prices found.</p>
-        <p className="text-[10px] text-neutral-400">Please check stores manually.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {prices.map((p, i) => (
-        <a key={i} href={p.link} target="_blank" rel="noopener noreferrer" className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors group ${i === 0 ? "border-green-200 bg-green-50 hover:bg-green-100" : "border-neutral-200 bg-neutral-50 hover:bg-neutral-100"}`}>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-white border border-neutral-200 p-0.5 flex items-center justify-center">
-              <img src={p.logo} alt={p.store} className="max-w-full max-h-full object-contain" />
-            </div>
-            <span className="text-xs font-bold text-neutral-700">{p.store}</span>
-          </div>
-          <div className="text-right">
-            <span className={`text-sm font-black ${i === 0 ? "text-green-700" : "text-neutral-900"}`}>{formatINR(p.price)}</span>
-            {i === 0 && <span className="block text-[8px] font-bold uppercase tracking-widest text-green-600 mt-0.5">Lowest</span>}
-          </div>
-        </a>
-      ))}
-    </div>
-  );
 }

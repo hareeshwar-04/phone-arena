@@ -24,10 +24,11 @@ export function SkeletonCard() {
   );
 }
 
-export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect }: {
+export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badges }: {
   phone: PhoneWithRatings; isCompared: boolean;
   onToggle: (id: string) => void; weights: WeightConfig;
   onSelect?: () => void;
+  badges?: string[];
 }) {
   const total = weights.gaming + weights.durability + weights.camera || 1;
   const customScore = Math.round(((phone.ratings.gaming * weights.gaming + phone.ratings.durability * weights.durability + phone.ratings.creator * weights.camera) / total) * 10) / 10;
@@ -46,6 +47,16 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect }: {
         </div>
       )}
       <div className="p-5">
+        {/* Recommendation Badges */}
+        {badges && badges.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {badges.map((badge) => (
+              <span key={badge} className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-800">
+                {badge}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex items-start gap-4 mb-4 border-b border-neutral-100 pb-4">
           <div className="w-16 h-20 bg-neutral-50 flex items-center justify-center flex-shrink-0">
             <img src={phone.image_url} alt={phone.name} className="max-w-full max-h-full object-contain mix-blend-multiply" loading="lazy" />

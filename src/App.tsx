@@ -1,32 +1,26 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search } from "lucide-react";
-import type { PhoneSpec, WeightConfig } from "./types";
-import { mockPhones } from "./types";
+import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles } from "lucide-react";
+import type { PhoneSpec, WeightConfig, FilterConfig } from "./types";
+import { mockPhones, DEFAULT_FILTERS } from "./types";
 import { usePhoneRatings, useWeightedSort, useShareBattle } from "./hooks";
 import { PhoneCard, SkeletonCard } from "./PhoneCard";
 import { FilterSidebar } from "./FilterSidebar";
 import { ComparisonMatrix } from "./ComparisonMatrix";
 import { PhoneDetail } from "./PhoneDetail";
+import { OnboardingWizard } from "./OnboardingWizard";
 
 const SHEET_URL = "https://opensheet.elk.sh/1yhvi3qx40ijUz2RyQ7Vojfxx3ZGoyWcaUgTisWfOGmM/Sheet1";
 type ViewMode = "discover" | "compare";
-type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "battery";
+type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "battery" | "newest";
 
 function parseSheetRow(row: Record<string, string>): PhoneSpec {
   return {
-    id: row.id || "",
-    name: row.name || "",
-    brand: row.brand || "",
-    price_inr: Number(row.price_inr) || 0,
-    image_url: row.image_url || "",
-    launch_date: row.launch_date || "",
-    cpu_name: row.cpu_name || "",
-    raw_cpu_score: Number(row.raw_cpu_score) || 0,
-    raw_ui_score: Number(row.raw_ui_score) || 0,
-    os_updates_years: Number(row.os_updates_years) || 0,
-    battery_mah: Number(row.battery_mah) || 0,
-    charging_w: Number(row.charging_w) || 0,
-    main_camera_score: Number(row.main_camera_score) || 0,
+    id: row.id || "", name: row.name || "", brand: row.brand || "",
+    price_inr: Number(row.price_inr) || 0, image_url: row.image_url || "",
+    launch_date: row.launch_date || "", cpu_name: row.cpu_name || "",
+    raw_cpu_score: Number(row.raw_cpu_score) || 0, raw_ui_score: Number(row.raw_ui_score) || 0,
+    os_updates_years: Number(row.os_updates_years) || 0, battery_mah: Number(row.battery_mah) || 0,
+    charging_w: Number(row.charging_w) || 0, main_camera_score: Number(row.main_camera_score) || 0,
     front_camera_score: Number(row.front_camera_score) || 0,
     display_refresh_hz: Number(row.display_refresh_hz) || 0,
     build_quality_score: Number(row.build_quality_score) || 0,
@@ -45,10 +39,16 @@ export default function App() {
   const [selectedPhoneId, setSelectedPhoneId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("match");
   const [comparedIds, setComparedIds] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([10000, 200000]);
-  const [weights, setWeights] = useState<WeightConfig>({ gaming: 50, durability: 50, camera: 50 });
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("pa_wizard_done"));
+  const [filters, setFilters] = useState<FilterConfig>(() => {
+    const saved = localStorage.getItem("pa_filters");
+    return saved ? JSON.parse(saved) : { ...DEFAULT_FILTERS };
+  });
+
+  // Persist filters
+  useEffect(() => { localStorage.setItem("pa_filters", JSON.stringify(filters)); }, [filters]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,20 +68,52 @@ export default function App() {
 
   const phonesWithRatings = usePhoneRatings(rawPhones);
   const allIds = useMemo(() => rawPhones.map((p) => p.id), [rawPhones]);
-  const brands = useMemo(() => [...new Set(rawPhones.map((p) => p.brand))], [rawPhones]);
+  const brands = useMemo(() => [...new Set(rawPhones.map((p) => p.brand))].sort(), [rawPhones]);
+
+  // Extract available filter options from the database
+  const availableScreenTypes = useMemo(() => [...new Set(rawPhones.map(p => p.screen_type).filter(Boolean))].sort(), [rawPhones]);
+  const availableRamTypes = useMemo(() => [...new Set(rawPhones.map(p => p.ram_type).filter(Boolean))].sort(), [rawPhones]);
+  const availableStorageTypes = useMemo(() => [...new Set(rawPhones.map(p => p.storage_type).filter(Boolean))].sort(), [rawPhones]);
+  const availableProcessorTiers = useMemo(() => {
+    const tiers = new Set<string>();
+    rawPhones.forEach(p => {
+      if (p.cpu_name.includes("Snapdragon 8")) tiers.add("Snapdragon 8 Series");
+      else if (p.cpu_name.includes("Snapdragon 7")) tiers.add("Snapdragon 7 Series");
+      else if (p.cpu_name.includes("Dimensity 9")) tiers.add("Dimensity 9000+");
+      else if (p.cpu_name.includes("Dimensity 8")) tiers.add("Dimensity 8000+");
+      else if (p.cpu_name.includes("A1")) tiers.add("Apple A-Series");
+      else if (p.cpu_name.includes("Exynos")) tiers.add("Exynos");
+      else if (p.cpu_name.includes("Tensor")) tiers.add("Google Tensor");
+    });
+    return [...tiers].sort();
+  }, [rawPhones]);
 
   useShareBattle(comparedIds, (ids) => { setComparedIds(ids); setView("compare"); }, allIds);
 
+  // Apply all filters
   const filteredPhones = useMemo(() => {
     return phonesWithRatings.filter((p) => {
-      if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) return false;
-      if (p.price_inr > priceRange[1]) return false;
+      if (filters.selectedBrands.length > 0 && !filters.selectedBrands.includes(p.brand)) return false;
+      if (p.price_inr < filters.priceRange[0] || p.price_inr > filters.priceRange[1]) return false;
+      if (filters.batteryMin > 0 && p.battery_mah < filters.batteryMin) return false;
+      if (filters.chargingMin > 0 && p.charging_w < filters.chargingMin) return false;
+      if (filters.refreshRateMin > 0 && p.display_refresh_hz < filters.refreshRateMin) return false;
+      if (filters.screenTypes.length > 0 && !filters.screenTypes.some(st => p.screen_type.includes(st))) return false;
+      if (filters.ramTypes.length > 0 && !filters.ramTypes.includes(p.ram_type)) return false;
+      if (filters.storageTypes.length > 0 && !filters.storageTypes.includes(p.storage_type)) return false;
+      if (filters.minCameraScore > 0 && p.main_camera_score < filters.minCameraScore) return false;
+      if (filters.minOsYears > 0 && p.os_updates_years < filters.minOsYears) return false;
+      // Search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!p.name.toLowerCase().includes(q) && !p.brand.toLowerCase().includes(q) && !p.cpu_name.toLowerCase().includes(q)) return false;
+      }
       return true;
     });
-  }, [phonesWithRatings, selectedBrands, priceRange]);
+  }, [phonesWithRatings, filters, searchQuery]);
 
-  const sortedPhones = useWeightedSort(filteredPhones, weights);
-  
+  const sortedPhones = useWeightedSort(filteredPhones, filters.weights);
+
   const finalSortedPhones = useMemo(() => {
     const list = [...sortedPhones];
     if (sortBy === "match") return list;
@@ -90,8 +122,25 @@ export default function App() {
     if (sortBy === "performance") return list.sort((a, b) => b.raw_cpu_score - a.raw_cpu_score);
     if (sortBy === "camera") return list.sort((a, b) => b.main_camera_score - a.main_camera_score);
     if (sortBy === "battery") return list.sort((a, b) => b.battery_mah - a.battery_mah);
+    if (sortBy === "newest") return list.sort((a, b) => b.launch_date.localeCompare(a.launch_date));
     return list;
   }, [sortedPhones, sortBy]);
+
+  // Smart recommendation badges
+  const badges = useMemo(() => {
+    if (filteredPhones.length < 2) return {};
+    const map: Record<string, string[]> = {};
+    const addBadge = (id: string, badge: string) => { map[id] = [...(map[id] || []), badge]; };
+    const best = (key: (p: typeof filteredPhones[0]) => number, badge: string) => {
+      const sorted = [...filteredPhones].sort((a, b) => key(b) - key(a));
+      if (sorted[0]) addBadge(sorted[0].id, badge);
+    };
+    best(p => p.ratings.gaming, "⚡ Best Performance");
+    best(p => p.ratings.creator, "📸 Best Camera");
+    best(p => p.ratings.vfm, "💎 Best Value");
+    best(p => p.battery_mah, "🔋 Best Battery");
+    return map;
+  }, [filteredPhones]);
 
   const comparedPhones = useMemo(() => phonesWithRatings.filter((p) => comparedIds.includes(p.id)), [phonesWithRatings, comparedIds]);
 
@@ -99,12 +148,41 @@ export default function App() {
     setComparedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 4 ? [...prev, id] : prev);
   }, []);
 
-  const toggleBrand = useCallback((brand: string) => {
-    setSelectedBrands((prev) => prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]);
+  const handleWizardComplete = useCallback((wizardFilters: FilterConfig) => {
+    setFilters(wizardFilters);
+    setShowWizard(false);
+    localStorage.setItem("pa_wizard_done", "true");
   }, []);
+
+  const handleWizardSkip = useCallback(() => {
+    setShowWizard(false);
+    localStorage.setItem("pa_wizard_done", "true");
+  }, []);
+
+  // Active filter pills
+  const activeFilterPills = useMemo(() => {
+    const pills: { label: string; onRemove: () => void }[] = [];
+    filters.selectedBrands.forEach(b => pills.push({
+      label: b, onRemove: () => setFilters(f => ({ ...f, selectedBrands: f.selectedBrands.filter(x => x !== b) }))
+    }));
+    if (filters.priceRange[0] > 5000 || filters.priceRange[1] < 200000)
+      pills.push({ label: `₹${(filters.priceRange[0]/1000).toFixed(0)}K – ₹${(filters.priceRange[1]/1000).toFixed(0)}K`, onRemove: () => setFilters(f => ({ ...f, priceRange: [5000, 200000] })) });
+    if (filters.batteryMin > 0) pills.push({ label: `${filters.batteryMin}+ mAh`, onRemove: () => setFilters(f => ({ ...f, batteryMin: 0 })) });
+    if (filters.chargingMin > 0) pills.push({ label: `${filters.chargingMin}W+`, onRemove: () => setFilters(f => ({ ...f, chargingMin: 0 })) });
+    if (filters.refreshRateMin > 0) pills.push({ label: `${filters.refreshRateMin}Hz+`, onRemove: () => setFilters(f => ({ ...f, refreshRateMin: 0 })) });
+    filters.screenTypes.forEach(st => pills.push({ label: st, onRemove: () => setFilters(f => ({ ...f, screenTypes: f.screenTypes.filter(x => x !== st) })) }));
+    filters.ramTypes.forEach(rt => pills.push({ label: rt, onRemove: () => setFilters(f => ({ ...f, ramTypes: f.ramTypes.filter(x => x !== rt) })) }));
+    filters.storageTypes.forEach(st => pills.push({ label: st, onRemove: () => setFilters(f => ({ ...f, storageTypes: f.storageTypes.filter(x => x !== st) })) }));
+    if (filters.minCameraScore > 0) pills.push({ label: `Camera ${filters.minCameraScore}+`, onRemove: () => setFilters(f => ({ ...f, minCameraScore: 0 })) });
+    if (filters.minOsYears > 0) pills.push({ label: `${filters.minOsYears}yr+ updates`, onRemove: () => setFilters(f => ({ ...f, minOsYears: 0 })) });
+    return pills;
+  }, [filters]);
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans antialiased selection:bg-blue-500/20 selection:text-blue-900">
+      {/* Onboarding Wizard */}
+      {showWizard && !loading && <OnboardingWizard onComplete={handleWizardComplete} onSkip={handleWizardSkip} />}
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -118,6 +196,16 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="hidden sm:flex items-center bg-neutral-100 rounded-lg border border-neutral-200 px-3 py-1.5 gap-2 w-48 lg:w-64">
+              <Search size={14} className="text-neutral-400 flex-shrink-0" />
+              <input
+                type="text" placeholder="Search phones..."
+                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent text-sm text-neutral-700 outline-none w-full placeholder:text-neutral-400"
+              />
+              {searchQuery && <button onClick={() => setSearchQuery("")} className="text-neutral-400 hover:text-neutral-600"><X size={14} /></button>}
+            </div>
             {/* View Tabs */}
             <div className="hidden sm:flex items-center rounded bg-neutral-100 p-1 border border-neutral-200">
               <button onClick={() => setView("discover")} className={`px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${view === "discover" ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" : "text-neutral-500 hover:text-neutral-700"}`}>
@@ -139,17 +227,28 @@ export default function App() {
             <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
               <SlidersHorizontal size={20} />
             </button>
+            {/* Re-open wizard */}
+            <button onClick={() => setShowWizard(true)} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200/50 text-xs font-semibold text-blue-700 hover:from-blue-100 hover:to-violet-100 transition-colors" title="Re-run phone finder wizard">
+              <Sparkles size={14} /> Find My Phone
+            </button>
+          </div>
+        </div>
+        {/* Mobile search */}
+        <div className="sm:hidden px-4 pb-3">
+          <div className="flex items-center bg-neutral-100 rounded-lg border border-neutral-200 px-3 py-2 gap-2">
+            <Search size={14} className="text-neutral-400" />
+            <input type="text" placeholder="Search phones..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent text-sm text-neutral-700 outline-none w-full placeholder:text-neutral-400" />
+            {searchQuery && <button onClick={() => setSearchQuery("")} className="text-neutral-400 hover:text-neutral-600"><X size={14} /></button>}
           </div>
         </div>
       </header>
 
-      {/* Constant Disclaimer */}
+      {/* Disclaimer */}
       <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2.5 text-center text-xs font-medium text-yellow-800 flex items-center justify-center gap-2 shadow-sm relative z-40">
-        <span className="font-bold uppercase tracking-wider text-[10px] bg-yellow-200 px-1.5 py-0.5 rounded text-yellow-900">Disclaimer</span> 
+        <span className="font-bold uppercase tracking-wider text-[10px] bg-yellow-200 px-1.5 py-0.5 rounded text-yellow-900">Disclaimer</span>
         <span>There might be a few inaccuracies in the specs. Please cross-check before making any final decisions.</span>
       </div>
 
-      {/* Error banner */}
       {fetchError && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
           <div className="rounded bg-red-50 border border-red-200 px-4 py-3 flex items-center justify-between">
@@ -160,7 +259,6 @@ export default function App() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* ===== COMPARE MATRIX VIEW ===== */}
         {view === "compare" && (
           <div>
             {comparedPhones.length === 0 ? (
@@ -176,13 +274,17 @@ export default function App() {
           </div>
         )}
 
-        {/* ===== DISCOVER HUB VIEW ===== */}
         {view === "discover" && (
           <div className="flex gap-8">
             {/* Sidebar — Desktop */}
             <aside className="hidden lg:block w-64 flex-shrink-0">
-              <div className="sticky top-24 bg-white border border-neutral-200 rounded p-6 shadow-sm">
-                <FilterSidebar brands={brands} selectedBrands={selectedBrands} onToggleBrand={toggleBrand} priceRange={priceRange} onPriceChange={setPriceRange} weights={weights} onWeightChange={setWeights} />
+              <div className="sticky top-24 bg-white border border-neutral-200 rounded p-5 shadow-sm max-h-[calc(100vh-7rem)] overflow-y-auto hide-scrollbar">
+                <FilterSidebar
+                  brands={brands} filters={filters} onFilterChange={setFilters}
+                  availableScreenTypes={availableScreenTypes} availableRamTypes={availableRamTypes}
+                  availableStorageTypes={availableStorageTypes} availableProcessorTiers={availableProcessorTiers}
+                  phoneCount={finalSortedPhones.length}
+                />
               </div>
             </aside>
 
@@ -192,32 +294,47 @@ export default function App() {
                 <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={() => setMobileFilterOpen(false)} />
                 <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] bg-white rounded-t-xl p-6 overflow-y-auto">
                   <div className="w-12 h-1.5 bg-neutral-200 rounded-full mx-auto mb-6" />
-                  <FilterSidebar brands={brands} selectedBrands={selectedBrands} onToggleBrand={toggleBrand} priceRange={priceRange} onPriceChange={setPriceRange} weights={weights} onWeightChange={setWeights} />
+                  <FilterSidebar
+                    brands={brands} filters={filters} onFilterChange={setFilters}
+                    availableScreenTypes={availableScreenTypes} availableRamTypes={availableRamTypes}
+                    availableStorageTypes={availableStorageTypes} availableProcessorTiers={availableProcessorTiers}
+                    phoneCount={finalSortedPhones.length}
+                  />
                 </div>
               </div>
             )}
 
             {/* Phone Grid */}
             <div className="flex-1 min-w-0">
+              {/* Active filter pills */}
+              {activeFilterPills.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {activeFilterPills.map((pill, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[11px] font-semibold text-blue-800">
+                      {pill.label}
+                      <button onClick={pill.onRemove} className="text-blue-400 hover:text-blue-700 ml-0.5"><X size={12} /></button>
+                    </span>
+                  ))}
+                  <button onClick={() => setFilters({ ...DEFAULT_FILTERS })} className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-red-500 hover:bg-red-50 transition-colors">Clear all</button>
+                </div>
+              )}
+
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-200">
                 <p className="font-semibold text-neutral-700 text-sm sm:text-base">{loading ? "Loading database..." : `${finalSortedPhones.length} matches found`}</p>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest font-semibold hidden sm:inline">Sort by:</span>
-                  <select 
-                    value={sortBy} 
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="text-[10px] sm:text-xs font-bold p-1 sm:p-1.5 rounded border border-neutral-200 bg-white text-neutral-700 outline-none cursor-pointer"
-                  >
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="text-[10px] sm:text-xs font-bold p-1 sm:p-1.5 rounded border border-neutral-200 bg-white text-neutral-700 outline-none cursor-pointer">
                     <option value="match">Match Score</option>
                     <option value="price_asc">Price: Low to High</option>
                     <option value="price_desc">Price: High to Low</option>
                     <option value="performance">Best Performance</option>
                     <option value="camera">Best Camera</option>
                     <option value="battery">Largest Battery</option>
+                    <option value="newest">Newest First</option>
                   </select>
                 </div>
               </div>
-              
+
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
@@ -225,57 +342,27 @@ export default function App() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {finalSortedPhones.map((phone) => (
-                    <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={weights} onSelect={() => setSelectedPhoneId(phone.id)} />
+                    <PhoneCard key={phone.id} phone={phone} isCompared={comparedIds.includes(phone.id)} onToggle={toggleCompare} weights={filters.weights} onSelect={() => setSelectedPhoneId(phone.id)} badges={badges[phone.id]} />
                   ))}
                 </div>
               )}
-              
+
               {!loading && finalSortedPhones.length === 0 && (
                 <div className="text-center py-20 bg-white border border-neutral-200 rounded mt-4">
                   <Monitor size={48} className="mx-auto text-neutral-300 mb-4" />
                   <h3 className="text-lg font-bold text-neutral-800 mb-1">No matches found</h3>
-                  <p className="text-neutral-500">Adjust your price filters or brand selections.</p>
+                  <p className="text-neutral-500 mb-4">Adjust your filters or try a different search.</p>
+                  <button onClick={() => { setFilters({ ...DEFAULT_FILTERS }); setSearchQuery(""); }} className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors">Reset All Filters</button>
                 </div>
               )}
             </div>
           </div>
         )}
       </main>
-      
-      {/* Phone Detail Modal */}
+
       {selectedPhoneId && (
-        <PhoneDetail 
-          phone={phonesWithRatings.find(p => p.id === selectedPhoneId)!} 
-          onClose={() => setSelectedPhoneId(null)} 
-        />
+        <PhoneDetail phone={phonesWithRatings.find(p => p.id === selectedPhoneId)!} onClose={() => setSelectedPhoneId(null)} />
       )}
-
-      {/* Tutorial Toast */}
-      <TutorialToast />
-    </div>
-  );
-}
-
-function TutorialToast() {
-  const [show, setShow] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShow(false), 8000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!show) return null;
-
-  return (
-    <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white p-5 rounded-xl shadow-2xl border border-neutral-700 max-w-xs animate-fade-in-up">
-      <div className="flex justify-between items-start mb-3">
-        <h4 className="font-bold text-sm flex items-center gap-2"><Smartphone size={16} className="text-blue-400" /> Quick Guide</h4>
-        <button onClick={() => setShow(false)} className="text-neutral-400 hover:text-white"><X size={14} /></button>
-      </div>
-      <ul className="text-xs text-neutral-300 space-y-2 ml-1 border-l-2 border-blue-500/30 pl-3 font-medium">
-        <li>• Tune the weights in the sidebar to match your needs.</li>
-        <li>• Click <b className="text-white">+ Compare</b> to view devices side-by-side.</li>
-      </ul>
     </div>
   );
 }

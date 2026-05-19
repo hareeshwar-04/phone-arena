@@ -1,3 +1,34 @@
+/** Extended filter configuration for the sidebar */
+export interface FilterConfig {
+  selectedBrands: string[];
+  priceRange: [number, number];
+  weights: WeightConfig;
+  batteryMin: number;
+  chargingMin: number;
+  refreshRateMin: number;
+  screenTypes: string[];
+  processorTiers: string[];
+  minCameraScore: number;
+  minOsYears: number;
+  ramTypes: string[];
+  storageTypes: string[];
+}
+
+export const DEFAULT_FILTERS: FilterConfig = {
+  selectedBrands: [],
+  priceRange: [5000, 200000],
+  weights: { gaming: 50, durability: 50, camera: 50 },
+  batteryMin: 0,
+  chargingMin: 0,
+  refreshRateMin: 0,
+  screenTypes: [],
+  processorTiers: [],
+  minCameraScore: 0,
+  minOsYears: 0,
+  ramTypes: [],
+  storageTypes: [],
+};
+
 // ============================================================
 // PhoneArena India — Type Definitions & Mock Data (2026 Market)
 // ============================================================
