@@ -662,13 +662,13 @@ export default function App() {
             </div>
 
             {/* View Tabs */}
-            <div className="hidden sm:flex items-center rounded-xl bg-neutral-50 dark:bg-neutral-850 p-1 border border-neutral-200/70 dark:border-neutral-800 shadow-sm">
+            <div className="hidden sm:flex items-center rounded-xl bg-neutral-100 dark:bg-neutral-800 p-1 shadow-sm">
               <button 
                 onClick={() => setView("discover")} 
-                className={`px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                className={`px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-200 ${
                   view === "discover" 
-                    ? "bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm border border-neutral-200/40 dark:border-neutral-700/40" 
-                    : "text-neutral-500 dark:text-neutral-450 hover:text-neutral-800 dark:hover:text-neutral-200"
+                    ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-450 shadow-sm" 
+                    : "text-neutral-550 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
                 }`}
               >
                 <span className="flex items-center gap-1.5"><Search size={13} /> Browse</span>
@@ -676,15 +676,15 @@ export default function App() {
               <div className="relative">
                 <button 
                   onClick={() => setView("compare")} 
-                  className={`relative px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-300 ${
+                  className={`relative px-4.5 py-1.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all duration-200 ${
                     view === "compare" 
-                      ? "bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm border border-neutral-200/40 dark:border-neutral-700/40" 
-                      : "text-neutral-500 dark:text-neutral-450 hover:text-neutral-800 dark:hover:text-neutral-200"
-                  } ${highlightCompare ? "animate-wiggle border-blue-500 ring-2 ring-blue-500/70 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow" : ""}`}
+                      ? "bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-450 shadow-sm" 
+                      : "text-neutral-555 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
+                  } ${highlightCompare ? "animate-wiggle bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow" : ""}`}
                 >
                   <span className="flex items-center gap-1.5"><Layers size={13} /> Compare</span>
                   {comparedIds.length > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-blue-600 text-[8px] font-black text-white flex items-center justify-center border border-white dark:border-neutral-800 shadow-sm">
+                    <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-blue-600 text-[8px] font-black text-white flex items-center justify-center border border-white dark:border-neutral-750 shadow-sm">
                       {comparedIds.length}
                     </span>
                   )}
@@ -1128,6 +1128,57 @@ export default function App() {
         )}
       </main>
       )}
+
+      {/* Footer & Professional Disclaimer Section */}
+      <footer className="mt-auto border-t border-neutral-200 dark:border-neutral-800 bg-neutral-900 text-neutral-400 py-12 px-4 sm:px-6 relative z-30">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 mb-8">
+          <div className="md:col-span-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 flex items-center justify-center flex-shrink-0">
+                <div className="absolute w-4 h-6 rounded-[3px] bg-gradient-to-br from-indigo-500 to-purple-600 -rotate-12 translate-x-[-2px] shadow-sm" />
+                <div className="absolute w-4 h-6 rounded-[3px] bg-gradient-to-tr from-blue-500 to-cyan-400 rotate-12 translate-x-[2px] border border-white/20 shadow-md backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                </div>
+              </div>
+              <h2 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
+                <span className="font-extrabold tracking-tighter">PHONE</span>
+                <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent font-black tracking-[0.1em] text-[11px]">ARENA</span>
+                <span className="text-[7px] bg-blue-600 text-white px-1 py-0.5 rounded font-black tracking-wider uppercase">IN</span>
+              </h2>
+            </div>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              India's premier independent smartphone discovery & hardware evaluation engine. Empowering buyers with objective ratings, value metrics, and side-by-side spec diagnostics.
+            </p>
+            <p className="text-[10px] text-neutral-500">
+              © {new Date().getFullYear()} PhoneArena India. All rights reserved.
+            </p>
+          </div>
+          
+          <div className="md:col-span-8 space-y-4 md:border-l md:border-neutral-800 md:pl-8">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-300 block">Legal & Disclaimer Notices</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[10px] text-neutral-450 leading-relaxed">
+              <div className="space-y-2">
+                <p className="font-bold text-neutral-350 dark:text-neutral-300">Independent Platform</p>
+                <p>
+                  <strong>PhoneArena India</strong> is a fully independent product comparison engine. It is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Apple Inc., Samsung Electronics, Google, OnePlus, Xiaomi, Vivo, Oppo, Nothing, or any other smartphone manufacturer or their subsidiaries.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="font-bold text-neutral-350 dark:text-neutral-300">Data Accuracy & Estimates</p>
+                <p>
+                  All hardware ratings, camera benchmarks, launch dates, and price representations are estimated metrics or collected from public domain search sources. Actual retail specifications, pre-installed apps (bloatware), and street pricing may fluctuate. Cross-reference exact details with authorized brand channels before committing to any purchases.
+                </p>
+              </div>
+            </div>
+            <div className="pt-4 border-t border-neutral-800/60 text-[9px] text-neutral-500 flex flex-wrap gap-x-6 gap-y-2">
+              <span>Not affiliated with PhoneArena.com or any foreign entities.</span>
+              <a href="#" className="hover:text-blue-400 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-blue-400 transition-colors">Affiliate Disclosure</a>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       <SpecGuideModal isOpen={showSpecGuide} onClose={() => setShowSpecGuide(false)} />
     </div>
