@@ -312,7 +312,7 @@ def scrape_live_phones(limit=1500, existing_data=None) -> list[dict]:
     if existing_data is None:
         existing_data = {}
     phones = []
-    brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno"]
+    brands = ["samsung", "apple", "vivo", "oppo", "oneplus", "xiaomi", "realme", "poco", "iqoo", "motorola", "google", "nothing", "cmf", "infinix", "tecno", "lava", "hmd", "asus", "honor"]
     
     for brand in brands:
         if len(phones) >= limit: break
