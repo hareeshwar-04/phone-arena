@@ -204,6 +204,55 @@ def parse_number(text: str) -> int:
     nums = re.findall(r'[\d,]+', text.replace(",", ""))
     return int(nums[0]) if nums else 0
 
+def parse_release_date_to_yyyy_mm(date_str: str) -> str:
+    months = {
+        "january": "01", "february": "02", "march": "03", "april": "04",
+        "may": "05", "june": "06", "july": "07", "august": "08",
+        "september": "09", "october": "10", "november": "11", "december": "12",
+        "jan": "01", "feb": "02", "mar": "03", "apr": "04", "jun": "06",
+        "jul": "07", "aug": "08", "sep": "09", "oct": "10", "nov": "11", "dec": "12"
+    }
+    date_clean = date_str.lower()
+    year_match = re.search(r'\b(20\d{2})\b', date_clean)
+    year = year_match.group(1) if year_match else "2024"
+    
+    month = "09"
+    for name, num in months.items():
+        if name in date_clean:
+            month = num
+            break
+    return f"{year}-{month}"
+
+def extract_from_detail_page(detail_url: str) -> tuple[str, int | None]:
+    req = urllib.request.Request(detail_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+    try:
+        resp = urllib.request.urlopen(req, timeout=10)
+        html = resp.read().decode('utf-8')
+        soup = BeautifulSoup(html, "html.parser")
+        
+        release_date = ""
+        os_updates = None
+        
+        for row in soup.select("tr"):
+            cells = [c.get_text(strip=True) for c in row.select("td, th")]
+            if len(cells) >= 2:
+                label = cells[0].lower()
+                val = cells[1]
+                if "release date" in label:
+                    release_date = val
+                elif "os updates" in label:
+                    m = re.search(r'(\d+)', val)
+                    if m:
+                        os_updates = int(m.group(1))
+                        
+        if release_date:
+            release_date = parse_release_date_to_yyyy_mm(release_date)
+            
+        return release_date, os_updates
+    except Exception as e:
+        logger.warning(f"Error fetching detail page {detail_url}: {e}")
+        return "", None
+
 def estimate_launch_date(cpu_name: str) -> str:
     name = cpu_name.lower()
     if any(x in name for x in ["elite", "gen 5", "9500", "a19", "a18"]):
@@ -217,6 +266,7 @@ def estimate_launch_date(cpu_name: str) -> str:
     if any(x in name for x in ["gen 1", "9000", "8100", "g2", "a15", "778g"]):
         return "2022-08"
     return "2024-09"
+
 
 def scrape_live_phones(limit=1500) -> list[dict]:
     phones = []
@@ -323,6 +373,21 @@ def scrape_live_phones(limit=1500) -> list[dict]:
             if variant_str:
                 name_clean += variant_str
             name = name_clean
+            
+            # Fetch detail page to get actual launch/release date and OS updates policy
+            link_el = card.select_one("a")
+            relative_link = link_el.get("href") if link_el else ""
+            launch_date = ""
+            os_updates_years = None
+            
+            if relative_link:
+                detail_url = relative_link if relative_link.startswith("http") else "https://www.smartprix.com" + relative_link
+                logger.info(f"Fetching actual launch date and OS updates for {name} from {detail_url}...")
+                launch_date, os_updates_years = extract_from_detail_page(detail_url)
+                time.sleep(0.2) # Polite request throttling
+                
+            if not launch_date:
+                launch_date = estimate_launch_date(cpu_name)
                         
             phones.append({
                 "id": re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-'),
@@ -330,7 +395,8 @@ def scrape_live_phones(limit=1500) -> list[dict]:
                 "name": name,
                 "price_inr": price,
                 "image_url": img_url,
-                "launch_date": estimate_launch_date(cpu_name),
+                "launch_date": launch_date,
+                "os_updates_years": os_updates_years,
                 "cpu_name": cpu_name,
                 "battery_mah": battery_mah,
                 "charging_w": charging_w,
@@ -370,7 +436,7 @@ def build_sheet_row(phone: dict) -> dict:
         "screen_type": screen_t,
         "raw_cpu_score": calc_cpu(antutu),
         "raw_ui_score": calc_ui(bloat, skin),
-        "os_updates_years": {"apple": 6, "samsung": 4, "google": 7, "oneplus": 4, "nothing": 3, "motorola": 3}.get(brand.lower(), 2),
+        "os_updates_years": phone.get("os_updates_years") or {"apple": 6, "samsung": 4, "google": 7, "oneplus": 4, "nothing": 3, "motorola": 3}.get(brand.lower(), 2),
         "battery_mah": phone.get("battery_mah", 5000),
         "charging_w": phone.get("charging_w", 33),
         "main_camera_score": calc_cam_main(phone.get("main_camera_mp", 50), price, phone.get("name", "")),
