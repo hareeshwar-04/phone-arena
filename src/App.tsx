@@ -33,6 +33,7 @@ function parseSheetRow(row: Record<string, string>): PhoneSpec {
     storage_type: row.storage_type || "UFS 2.2",
     ram_type: row.ram_type || "LPDDR4X",
     screen_type: row.screen_type || "IPS LCD",
+    product_url: row.product_url || "",
   };
 }
 
@@ -45,7 +46,7 @@ export default function App() {
   const [comparedIds, setComparedIds] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([10000, 200000]);
-  const [weights, setWeights] = useState<WeightConfig>({ gaming: 34, durability: 33, camera: 33 });
+  const [weights, setWeights] = useState<WeightConfig>({ gaming: 50, durability: 50, camera: 50 });
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   useEffect(() => {
@@ -141,6 +142,12 @@ export default function App() {
         </div>
       </header>
 
+      {/* Constant Disclaimer */}
+      <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2.5 text-center text-xs font-medium text-yellow-800 flex items-center justify-center gap-2 shadow-sm relative z-40">
+        <span className="font-bold uppercase tracking-wider text-[10px] bg-yellow-200 px-1.5 py-0.5 rounded text-yellow-900">Disclaimer</span> 
+        <span>There might be a few inaccuracies in the specs. Please cross-check before making any final decisions.</span>
+      </div>
+
       {/* Error banner */}
       {fetchError && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
@@ -233,6 +240,32 @@ export default function App() {
           </div>
         )}
       </main>
+      {/* Tutorial Toast */}
+      <TutorialToast />
+    </div>
+  );
+}
+
+function TutorialToast() {
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(false), 8000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white p-5 rounded-xl shadow-2xl border border-neutral-700 max-w-xs animate-fade-in-up">
+      <div className="flex justify-between items-start mb-3">
+        <h4 className="font-bold text-sm flex items-center gap-2"><Smartphone size={16} className="text-blue-400" /> Quick Guide</h4>
+        <button onClick={() => setShow(false)} className="text-neutral-400 hover:text-white"><X size={14} /></button>
+      </div>
+      <ul className="text-xs text-neutral-300 space-y-2 ml-1 border-l-2 border-blue-500/30 pl-3 font-medium">
+        <li>• Tune the weights in the sidebar to match your needs.</li>
+        <li>• Click <b className="text-white">+ Compare</b> to view devices side-by-side.</li>
+      </ul>
     </div>
   );
 }

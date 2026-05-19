@@ -24,6 +24,7 @@ export interface PhoneSpec {
   storage_type: string;
   ram_type: string;
   screen_type: string;
+  product_url?: string;
 }
 
 /** Computed persona ratings derived from the formula engine */
@@ -52,7 +53,7 @@ export interface WeightConfig {
 export const mockPhones: PhoneSpec[] = [
   {
     id: "oneplus-nord-6",
-    name: "OnePlus Nord 6",
+    name: "OnePlus Nord 6 (12GB/256GB)",
     brand: "OnePlus",
     price_inr: 36999,
     image_url: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=600&fit=crop&q=80",
@@ -70,11 +71,12 @@ export const mockPhones: PhoneSpec[] = [
     antutu_score: 1800000,
     storage_type: "UFS 4.0",
     ram_type: "LPDDR5X",
-    screen_type: "AMOLED"
+    screen_type: "AMOLED",
+    product_url: "https://www.smartprix.com/mobiles/oneplus-brand"
   },
   {
     id: "poco-x8-pro-max",
-    name: "POCO X8 Pro Max",
+    name: "POCO X8 Pro Max (8GB/256GB)",
     brand: "POCO",
     price_inr: 28999,
     image_url: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=600&fit=crop&q=80",
@@ -92,11 +94,12 @@ export const mockPhones: PhoneSpec[] = [
     antutu_score: 1600000,
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
-    screen_type: "AMOLED"
+    screen_type: "AMOLED",
+    product_url: "https://www.smartprix.com/mobiles/poco-brand"
   },
   {
     id: "vivo-t5-pro",
-    name: "Vivo T5 Pro",
+    name: "Vivo T5 Pro (12GB/512GB)",
     brand: "Vivo",
     price_inr: 29997,
     image_url: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&h=600&fit=crop&q=80",
@@ -114,11 +117,12 @@ export const mockPhones: PhoneSpec[] = [
     antutu_score: 1100000,
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
-    screen_type: "AMOLED"
+    screen_type: "AMOLED",
+    product_url: "https://www.smartprix.com/mobiles/vivo-brand"
   },
   {
     id: "iqoo-z11",
-    name: "iQOO Z11 5G",
+    name: "iQOO Z11 5G (8GB/128GB)",
     brand: "iQOO",
     price_inr: 24999,
     image_url: "https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=400&h=600&fit=crop&q=80",
@@ -136,7 +140,8 @@ export const mockPhones: PhoneSpec[] = [
     antutu_score: 1550000,
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
-    screen_type: "AMOLED"
+    screen_type: "AMOLED",
+    product_url: "https://www.smartprix.com/mobiles/iqoo-brand"
   },
 ];
 

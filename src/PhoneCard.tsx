@@ -1,4 +1,4 @@
-import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monitor } from "lucide-react";
+import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monitor, ExternalLink } from "lucide-react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
 
@@ -33,7 +33,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights }: {
   const hasBloat = phone.raw_ui_score < 6.0;
 
   return (
-    <div className={`relative group rounded border bg-white transition-shadow duration-200 hover:shadow-md ${isCompared ? "border-blue-500 shadow-sm" : "border-neutral-200"}`}>
+    <div className={`relative group rounded border bg-white transition-shadow duration-200 hover:shadow-md animate-fade-in-up ${isCompared ? "border-blue-500 shadow-sm" : "border-neutral-200"}`}>
       {hasBloat && (
         <div className="absolute top-3 right-3 z-10 group/bloat cursor-help">
           <div className="flex items-center gap-1 rounded bg-red-50 border border-red-200 px-2 py-1 text-[10px] uppercase font-bold text-red-600">
@@ -93,9 +93,16 @@ export function PhoneCard({ phone, isCompared, onToggle, weights }: {
           <span className="text-base font-extrabold text-blue-700">{customScore.toFixed(1)}</span>
         </div>
         
-        <button onClick={() => onToggle(phone.id)} className={`w-full py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${isCompared ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
-          {isCompared ? <><X size={14} /> Remove</> : <><Plus size={14} /> Compare</>}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => onToggle(phone.id)} className={`flex-1 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${isCompared ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
+            {isCompared ? <><X size={14} /> Remove</> : <><Plus size={14} /> Compare</>}
+          </button>
+          {phone.product_url && (
+            <a href={phone.product_url} target="_blank" rel="noopener noreferrer" className="p-2.5 rounded border border-neutral-200 bg-neutral-50 text-neutral-500 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="View Source & Price">
+              <ExternalLink size={16} />
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
