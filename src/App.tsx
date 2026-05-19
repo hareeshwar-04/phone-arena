@@ -305,7 +305,7 @@ export default function App() {
               >
                 <Sparkles size={14} /> Find My Phone
               </button>
-              {showWizardTooltip && (
+              {showWizardTooltip && !showTooltip && (
                 <div className="absolute top-full mt-2.5 right-0 w-60 bg-gradient-to-br from-blue-600 to-indigo-650 text-white rounded-xl p-3 shadow-xl z-50 border border-blue-700 animate-float-subtle">
                   <div className="absolute bottom-full right-6 w-3 h-3 bg-blue-600 rotate-45 border-l border-t border-blue-700 transform translate-y-1.5" />
                   <div className="flex items-start justify-between gap-2">
