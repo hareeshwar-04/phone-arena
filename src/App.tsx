@@ -45,8 +45,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("pa_wizard_done"));
   const [showSpecGuide, setShowSpecGuide] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(() => !localStorage.getItem("pa_spec_tooltip_done"));
-  const [showWizardTooltip, setShowWizardTooltip] = useState(() => !localStorage.getItem("pa_wizard_tooltip_done"));
+  const [showTooltip, setShowTooltip] = useState(() => !localStorage.getItem("pa_spec_tooltip_v3"));
+  const [showWizardTooltip, setShowWizardTooltip] = useState(() => !localStorage.getItem("pa_wizard_tooltip_v3"));
   const [filters, setFilters] = useState<FilterConfig>(() => {
     const saved = localStorage.getItem("pa_filters_v2");
     if (!saved) return { ...DEFAULT_FILTERS };
@@ -239,13 +239,13 @@ export default function App() {
             {/* Mobile tabs */}
             <div className="flex sm:hidden items-center gap-1.5 relative">
               <button 
-                onClick={() => { setShowSpecGuide(true); setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                onClick={() => { setShowSpecGuide(true); setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_v3", "true"); }} 
                 className="p-2 rounded text-neutral-500 hover:bg-neutral-100 transition-colors" 
                 title="Spec Guide"
               >
                 <BookOpen size={18} />
               </button>
-              {showTooltip && (
+              {showTooltip && !showWizard && (
                 <div className="absolute top-full mt-2.5 left-0 w-52 bg-neutral-900 text-white rounded-xl p-2.5 shadow-xl z-50 border border-neutral-800 animate-float-subtle">
                   <div className="absolute bottom-full left-3 w-2.5 h-2.5 bg-neutral-900 rotate-45 border-l border-t border-neutral-800 transform translate-y-1.5" />
                   <div className="flex items-start justify-between gap-1.5">
@@ -253,7 +253,7 @@ export default function App() {
                       New to tech? Prefer reading this first! 📖
                     </p>
                     <button 
-                      onClick={() => { setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                      onClick={() => { setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_v3", "true"); }} 
                       className="text-neutral-400 hover:text-white flex-shrink-0"
                     >
                       <X size={10} />
@@ -273,13 +273,13 @@ export default function App() {
             {/* Spec Guide */}
             <div className="relative">
               <button 
-                onClick={() => { setShowSpecGuide(true); setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                onClick={() => { setShowSpecGuide(true); setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_v3", "true"); }} 
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200 text-xs font-semibold text-neutral-600 hover:bg-neutral-50 transition-colors" 
                 title="Learn what smartphone specs mean"
               >
                 <BookOpen size={14} className="text-neutral-500" /> Spec Guide
               </button>
-              {showTooltip && (
+              {showTooltip && !showWizard && (
                 <div className="absolute top-full mt-2.5 right-0 w-64 bg-neutral-900 text-white rounded-xl p-3 shadow-xl z-50 border border-neutral-800 animate-float-subtle">
                   <div className="absolute bottom-full right-6 w-3 h-3 bg-neutral-900 rotate-45 border-l border-t border-neutral-800 transform translate-y-1.5" />
                   <div className="flex items-start justify-between gap-2">
@@ -287,7 +287,7 @@ export default function App() {
                       New to tech? We highly recommend reading this spec guide first! 📖
                     </p>
                     <button 
-                      onClick={() => { setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_done", "true"); }} 
+                      onClick={() => { setShowTooltip(false); localStorage.setItem("pa_spec_tooltip_v3", "true"); }} 
                       className="text-neutral-400 hover:text-white flex-shrink-0 mt-0.5"
                     >
                       <X size={12} />
@@ -299,13 +299,13 @@ export default function App() {
             {/* Re-open wizard */}
             <div className="relative">
               <button 
-                onClick={() => { setShowWizard(true); setShowWizardTooltip(false); localStorage.setItem("pa_wizard_tooltip_done", "true"); }} 
+                onClick={() => { setShowWizard(true); setShowWizardTooltip(false); localStorage.setItem("pa_wizard_tooltip_v3", "true"); }} 
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200/50 text-xs font-semibold text-blue-700 hover:from-blue-100 hover:to-violet-100 transition-colors" 
                 title="Re-run phone finder wizard"
               >
                 <Sparkles size={14} /> Find My Phone
               </button>
-              {showWizardTooltip && !showTooltip && (
+              {showWizardTooltip && !showTooltip && !showWizard && (
                 <div className="absolute top-full mt-2.5 right-0 w-60 bg-gradient-to-br from-blue-600 to-indigo-650 text-white rounded-xl p-3 shadow-xl z-50 border border-blue-700 animate-float-subtle">
                   <div className="absolute bottom-full right-6 w-3 h-3 bg-blue-600 rotate-45 border-l border-t border-blue-700 transform translate-y-1.5" />
                   <div className="flex items-start justify-between gap-2">
@@ -313,7 +313,7 @@ export default function App() {
                       Need to find a phone fast? Use our smart finder wizard! ⚡
                     </p>
                     <button 
-                      onClick={() => { setShowWizardTooltip(false); localStorage.setItem("pa_wizard_tooltip_done", "true"); }} 
+                      onClick={() => { setShowWizardTooltip(false); localStorage.setItem("pa_wizard_tooltip_v3", "true"); }} 
                       className="text-blue-200 hover:text-white flex-shrink-0 mt-0.5"
                     >
                       <X size={12} />
