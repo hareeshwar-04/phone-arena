@@ -135,7 +135,7 @@ input[type="range"]::-moz-range-thumb {
 .stealth-mode .bg-rose-400,
 .stealth-mode .bg-red-400,
 .stealth-mode .bg-blue-500 {
-  background-color: #737373 !important;
+  background-color: #000000 !important;
 }
 .stealth-mode .text-emerald-700,
 .stealth-mode .text-amber-600,
@@ -183,37 +183,108 @@ input[type="range"]::-moz-range-thumb {
   border-color: #a3a3a3 !important;
 }
 
+/* Redefined Card styling, physics, and hover transitions in Stealth Mode */
+.stealth-mode .group.rounded-2xl.border {
+  border-color: #e5e5e5 !important;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 12px -5px rgba(0, 0, 0, 0.05) !important;
+}
+.stealth-mode .group.rounded-2xl.border:hover {
+  transform: translateY(-5px) scale(1.01) !important;
+  border-color: #171717 !important;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12) !important;
+}
+.stealth-mode .group.rounded-2xl.border.border-blue-500 {
+  border-color: #171717 !important;
+  outline: 2px solid #171717 !important;
+  outline-offset: -1px;
+}
+
+/* Recommendation Badges styling in Stealth Mode */
+.stealth-mode span.bg-gradient-to-r.from-amber-500.to-orange-500 {
+  background: #171717 !important;
+  color: #ffffff !important;
+  border: 1px solid #404040 !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 800 !important;
+  background-image: none !important;
+}
+
+/* Bloat Risk Tag in Stealth Mode */
+.stealth-mode .bg-rose-50.border-rose-100 {
+  background-color: #f5f5f5 !important;
+  border-color: #d4d4d4 !important;
+  color: #404040 !important;
+}
+.stealth-mode .text-rose-600 {
+  color: #404040 !important;
+}
+
+/* Buy buttons in Stealth Mode */
+.stealth-mode button.bg-blue-600,
+.stealth-mode a.bg-blue-600 {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border: 1px solid transparent !important;
+}
+.stealth-mode button.bg-blue-600:hover,
+.stealth-mode a.bg-blue-600:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
+/* Progress rating backgrounds track in Stealth Mode */
+.stealth-mode .bg-neutral-100 {
+  background-color: #f5f5f5 !important;
+}
+
+/* Animated spin gradient overrides in Stealth Mode */
+.stealth-mode .animate-spin-gradient {
+  background: linear-gradient(270deg, #000000, #404040, #737373, #000000) !important;
+  background-size: 600% 600% !important;
+  animation: spin-gradient 4s ease infinite !important;
+}
+
+/* Fade in up custom curves in Stealth Mode */
+.stealth-mode .animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
 /* Dark theme + Stealth mode combinations */
 .dark.stealth-mode .text-blue-600,
 .dark.stealth-mode .text-blue-400 {
-  color: #e5e5e5 !important;
+  color: #ffffff !important;
 }
 .dark.stealth-mode .bg-blue-600 {
-  background-color: #e5e5e5 !important;
-  color: #171717 !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
+.dark.stealth-mode .bg-blue-100,
 .dark.stealth-mode .bg-blue-900\/50 {
-  background-color: #262626 !important;
-  color: #e5e5e5 !important;
+  background-color: #141414 !important;
+  color: #ffffff !important;
 }
 .dark.stealth-mode .bg-emerald-500,
 .dark.stealth-mode .bg-amber-400,
 .dark.stealth-mode .bg-rose-400,
-.dark.stealth-mode .bg-red-400 {
-  background-color: #a3a3a3 !important;
+.dark.stealth-mode .bg-red-400,
+.dark.stealth-mode .bg-blue-500 {
+  background-color: #ffffff !important;
 }
 .dark.stealth-mode .text-emerald-700,
 .dark.stealth-mode .text-amber-600,
 .dark.stealth-mode .text-rose-600,
 .dark.stealth-mode .text-red-600 {
-  color: #e5e5e5 !important;
+  color: #ffffff !important;
 }
 .dark.stealth-mode .bg-orange-50,
 .dark.stealth-mode .bg-purple-50,
 .dark.stealth-mode .bg-rose-50,
 .dark.stealth-mode .bg-amber-50 {
-  background-color: #1a2333 !important;
-  color: #e5e5e5 !important;
+  background-color: #0d0d0d !important;
+  color: #ffffff !important;
 }
 .dark.stealth-mode .border-orange-200\/60,
 .dark.stealth-mode .border-purple-100,
@@ -224,8 +295,51 @@ input[type="range"]::-moz-range-thumb {
 }
 .dark.stealth-mode .from-blue-600,
 .dark.stealth-mode .to-violet-600 {
-  --tw-gradient-from: #e5e5e5 !important;
-  --tw-gradient-to: #a3a3a3 !important;
+  --tw-gradient-from: #ffffff !important;
+  --tw-gradient-to: #e5e5e5 !important;
+}
+
+/* Redefined Card styling in Dark + Stealth Mode */
+.dark.stealth-mode .group.rounded-2xl.border {
+  border-color: #1c1c1c !important;
+  background-color: #000000 !important;
+  box-shadow: 0 4px 12px -5px rgba(0, 0, 0, 0.3) !important;
+}
+.dark.stealth-mode .group.rounded-2xl.border:hover {
+  transform: translateY(-5px) scale(1.01) !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8) !important;
+}
+.dark.stealth-mode .group.rounded-2xl.border.border-blue-500 {
+  border-color: #ffffff !important;
+  outline: 2px solid #ffffff !important;
+  outline-offset: -1px;
+}
+
+/* Recommendation Badges styling in Dark + Stealth Mode */
+.dark.stealth-mode span.bg-gradient-to-r.from-amber-500.to-orange-500 {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 800 !important;
+  background-image: none !important;
+}
+
+/* Bloat Risk Tag in Dark + Stealth Mode */
+.dark.stealth-mode .bg-rose-50.border-rose-100 {
+  background-color: #141414 !important;
+  border-color: #262626 !important;
+  color: #ffffff !important;
+}
+.dark.stealth-mode .text-rose-600 {
+  color: #ffffff !important;
+}
+
+/* Inactive progress bar track in Dark + Stealth Mode */
+.dark.stealth-mode .bg-neutral-850,
+.dark.stealth-mode .bg-neutral-800 {
+  background-color: #141414 !important;
 }
 
 /* ===== Dark Mode Theme Overrides (Pitch Black / AMOLED) ===== */
