@@ -28,7 +28,6 @@ function parseSheetRow(row: Record<string, string>): PhoneSpec {
     storage_type: row.storage_type || "UFS 2.2",
     ram_type: row.ram_type || "LPDDR4X",
     screen_type: row.screen_type || "IPS LCD",
-    sot_hours: Number(row.sot_hours) || 14.5,
     charging_mins: Number(row.charging_mins) || 60,
   };
 }

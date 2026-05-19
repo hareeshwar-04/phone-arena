@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone } from "lucide-react";
+import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone, Trophy, Sparkles } from "lucide-react";
 import type { PhoneWithRatings } from "./types";
 import { formatINR } from "./types";
 import { useVerdict, getOSUpdatesStatus } from "./hooks";
@@ -48,9 +48,8 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
 
     { label: "Refresh Rate", key: "ref", getValue: (p) => p.display_refresh_hz, fmt: (v) => `${v}Hz`, higherBetter: true },
     { label: "Battery", key: "bat", getValue: (p) => p.battery_mah, fmt: (v) => `${v} mAh`, higherBetter: true },
-    { label: "Active SOT", key: "sot", getValue: (p) => p.sot_hours, fmt: (v) => `${Number(v).toFixed(1)} hrs`, higherBetter: true },
     { label: "Charging Speed", key: "chg", getValue: (p) => p.charging_w, fmt: (v) => `${v}W`, higherBetter: true },
-    { label: "Full Charge Time", key: "chg_time", getValue: (p) => p.charging_mins, fmt: (v) => `${v} mins`, higherBetter: false },
+    { label: "Est. Full Charge Time", key: "chg_time", getValue: (p) => p.charging_mins, fmt: (v) => `${v} mins`, higherBetter: false },
     { label: "Main Camera", key: "cam", getValue: (p) => p.main_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "Selfie Camera", key: "sel", getValue: (p) => p.front_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "Build Quality", key: "bld", getValue: (p) => p.build_quality_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
@@ -79,6 +78,13 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
   const reliabilityWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.reliability > curr.ratings.reliability) ? prev : curr);
   const osWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.os > curr.ratings.os) ? prev : curr);
   const vfmWinner = virtualPhones.reduce((prev, curr) => (prev.ratings.vfm > curr.ratings.vfm) ? prev : curr);
+
+  const rankedAllRounders = [...virtualPhones].map(p => {
+    const avgScore = (p.ratings.performance + p.ratings.camera + p.ratings.reliability + p.ratings.os + p.ratings.vfm) / 5;
+    return { phone: p, avgScore };
+  }).sort((a, b) => b.avgScore - a.avgScore);
+
+  const allRounderWinner = rankedAllRounders[0]?.phone;
 
   return (
     <div className="space-y-8">
@@ -158,9 +164,46 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
       {phones.length > 1 && (
         <div>
           <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider mb-4 border-b border-neutral-200 pb-2">
-            Category Rankings
+            Category Rankings & Verdict
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Overall All-Rounder */}
+            <div className="col-span-1 md:col-span-2 rounded-xl border-2 border-amber-300 bg-amber-50/20 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-amber-500 text-white font-extrabold text-[10px] uppercase px-3 py-1 rounded-bl-lg tracking-wider flex items-center gap-1">
+                <Trophy size={12} /> Gold Standard
+              </div>
+              <div className="flex items-center gap-2 text-amber-600 mb-3">
+                <Sparkles size={18} /> <span className="font-extrabold text-xs uppercase tracking-wider text-amber-800">Overall All-Rounder</span>
+              </div>
+              <p className="text-neutral-900 font-black text-xl sm:text-2xl">{allRounderWinner.name}</p>
+              <p className="text-neutral-600 text-xs sm:text-sm mt-1">The most balanced smartphone choice across performance, camera, reliability, OS experience, and value.</p>
+              
+              {rankedAllRounders.length > 1 && (
+                <div className="mt-4 pt-3 border-t border-amber-200/60">
+                  <span className="text-[10px] font-extrabold uppercase text-amber-800 tracking-wider block mb-2">Overall Rankings</span>
+                  <div className="space-y-1.5">
+                    {rankedAllRounders.slice(0, 3).map((item, index) => {
+                      const medal = index === 0 ? "🥇 1st" : index === 1 ? "🥈 2nd" : "🥉 3rd";
+                      const badgeBg = index === 0 ? "bg-amber-100 text-amber-900 border-amber-200" : index === 1 ? "bg-slate-100 text-slate-800 border-slate-200" : "bg-orange-50 text-orange-850 border-orange-100";
+                      return (
+                        <div key={item.phone.id} className="flex items-center justify-between bg-white/60 hover:bg-white/90 border border-neutral-100 rounded-lg p-2 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider ${badgeBg}`}>{medal}</span>
+                            <span className="text-xs font-bold text-neutral-800">{item.phone.name}</span>
+                          </div>
+                          <span className="text-xs font-bold text-neutral-600">{item.avgScore.toFixed(1)}/10</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-500 border-t border-amber-100 pt-3">
+                <span>Calculated overall spec balance</span>
+                <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded">Avg Score: {((allRounderWinner.ratings.performance + allRounderWinner.ratings.camera + allRounderWinner.ratings.reliability + allRounderWinner.ratings.os + allRounderWinner.ratings.vfm) / 5).toFixed(1)}/10</span>
+              </div>
+            </div>
             {/* Gaming & Performance */}
             <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
                <div className="flex items-center gap-2 text-neutral-500 mb-3">

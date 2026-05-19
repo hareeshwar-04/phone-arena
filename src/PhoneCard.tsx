@@ -102,7 +102,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
           <div className="flex items-center gap-2">
             <Monitor size={13} className="text-neutral-400" /> <span>{phone.display_refresh_hz}Hz {phone.screen_type}</span>
             <span className="text-neutral-300">•</span>
-            <Battery size={13} className="text-neutral-400" /> <span>{phone.battery_mah}mAh ({phone.sot_hours.toFixed(1)}h SOT • {phone.charging_mins}m charge)</span>
+            <Battery size={13} className="text-neutral-400" /> <span>{phone.battery_mah}mAh ({phone.charging_mins}m est. charge)</span>
           </div>
           <div className="flex items-center gap-2">
             <Calendar size={13} className="text-neutral-400" />

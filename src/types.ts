@@ -64,7 +64,6 @@ export interface PhoneSpec {
   storage_type: string;
   ram_type: string;
   screen_type: string;
-  sot_hours: number;
   charging_mins: number;
 }
 
@@ -119,7 +118,6 @@ export const mockPhones: PhoneSpec[] = [
     storage_type: "UFS 4.0",
     ram_type: "LPDDR5X",
     screen_type: "AMOLED",
-    sot_hours: 15.2,
     charging_mins: 38,
   },
   {
@@ -143,7 +141,6 @@ export const mockPhones: PhoneSpec[] = [
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
     screen_type: "AMOLED",
-    sot_hours: 13.8,
     charging_mins: 25,
   },
   {
@@ -167,7 +164,6 @@ export const mockPhones: PhoneSpec[] = [
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
     screen_type: "AMOLED",
-    sot_hours: 16.5,
     charging_mins: 42,
   },
   {
@@ -191,7 +187,6 @@ export const mockPhones: PhoneSpec[] = [
     storage_type: "UFS 3.1",
     ram_type: "LPDDR5",
     screen_type: "AMOLED",
-    sot_hours: 15.9,
     charging_mins: 40,
   },
 ];
