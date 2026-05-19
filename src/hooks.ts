@@ -52,17 +52,19 @@ export interface OSUpdatesStatus {
 }
 
 export function formatLaunchDate(dateStr: string): string {
-  if (!dateStr || !dateStr.includes("-")) return dateStr;
-  const [year, month] = dateStr.split("-");
-  const monthNames = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-  ];
-  const mIndex = parseInt(month, 10) - 1;
-  if (mIndex >= 0 && mIndex < 12) {
-    return `${monthNames[mIndex]} ${year}`;
+  if (!dateStr) return "N/A";
+  if (!dateStr.includes("-")) return dateStr;
+  const [yearStr, monthStr] = dateStr.split("-");
+  const month = parseInt(monthStr, 10);
+  if (isNaN(month) || month < 1 || month > 12) {
+    return dateStr;
   }
-  return dateStr;
+  let quarter = "";
+  if (month >= 1 && month <= 3) quarter = "Q1";
+  else if (month >= 4 && month <= 6) quarter = "Q2";
+  else if (month >= 7 && month <= 9) quarter = "Q3";
+  else quarter = "Q4";
+  return `${quarter} ${yearStr}`;
 }
 
 export function getOSUpdatesStatus(launchDateStr: string, osUpdatesYears: number): OSUpdatesStatus {
