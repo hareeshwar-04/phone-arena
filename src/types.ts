@@ -12,6 +12,8 @@ export interface FilterConfig {
   minOsYears: number;
   ramTypes: string[];
   storageTypes: string[];
+  storageCapacities: number[];
+  ramCapacities: number[];
 }
 
 export const DEFAULT_FILTERS: FilterConfig = {
@@ -36,6 +38,8 @@ export const DEFAULT_FILTERS: FilterConfig = {
   minOsYears: 0,
   ramTypes: [],
   storageTypes: [],
+  storageCapacities: [],
+  ramCapacities: [],
 };
 
 // ============================================================

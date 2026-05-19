@@ -1,36 +1,82 @@
 import { useState } from "react";
 import { X, Zap, Camera, Shield, Star, BookOpen, Smartphone, Trophy, Sparkles } from "lucide-react";
-import type { PhoneWithRatings } from "./types";
+import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
-import { useVerdict, getOSUpdatesStatus } from "./hooks";
+import { useVerdict, getOSUpdatesStatus, calcMatchScore, getRamStorage, formatLaunchDate } from "./hooks";
 
-export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRatings[]; onRemove: (id: string) => void }) {
+function getVariantConfig(p: PhoneWithRatings, v: number) {
+  const base = getRamStorage(p.name);
+  const baseRam = base.ram || 8;
+  const baseStorage = base.storage || 128;
+  
+  let targetRam = baseRam;
+  let targetStorage = baseStorage;
+  let addedPrice = 0;
+  
+  if (v === 1) {
+    if (baseStorage === 64) {
+      targetStorage = 128;
+      targetRam = baseRam === 4 ? 6 : baseRam;
+      addedPrice = 2000;
+    } else if (baseStorage === 128) {
+      targetStorage = 256;
+      targetRam = baseRam === 6 ? 8 : baseRam;
+      addedPrice = p.price_inr > 60000 ? 10000 : 4000;
+    } else if (baseStorage === 256) {
+      targetStorage = 512;
+      targetRam = baseRam === 8 ? 12 : baseRam;
+      addedPrice = p.price_inr > 60000 ? 20000 : 9000;
+    } else if (baseStorage === 512) {
+      targetStorage = 1024;
+      targetRam = baseRam === 12 ? 16 : baseRam;
+      addedPrice = p.price_inr > 60000 ? 30000 : 15000;
+    }
+  } else if (v === 2) {
+    if (baseStorage === 64) {
+      targetStorage = 256;
+      targetRam = 8;
+      addedPrice = 5000;
+    } else if (baseStorage === 128) {
+      targetStorage = 512;
+      targetRam = baseRam <= 8 ? 12 : baseRam;
+      addedPrice = p.price_inr > 60000 ? 20000 : 9000;
+    } else if (baseStorage === 256) {
+      targetStorage = 1024;
+      targetRam = baseRam <= 12 ? 16 : baseRam;
+      addedPrice = p.price_inr > 60000 ? 40000 : 18000;
+    } else if (baseStorage === 512) {
+      targetStorage = 1024;
+      targetRam = 16;
+      addedPrice = p.price_inr > 60000 ? 30000 : 15000;
+    }
+  }
+  
+  return { targetRam, targetStorage, addedPrice };
+}
+
+export function ComparisonMatrix({ phones, onRemove, weights }: { phones: PhoneWithRatings[]; onRemove: (id: string) => void; weights: WeightConfig }) {
   const [variants, setVariants] = useState<Record<string, number>>({});
 
   const virtualPhones = phones.map(p => {
     const v = variants[p.id] || 0;
-    if (v === 0) return p;
+    const { targetRam, targetStorage, addedPrice } = getVariantConfig(p, v);
     
-    // Hardware upgrades: v=1 is +128GB, v=2 is +384GB
-    let addedPrice = v === 1 ? 4000 : 9000;
-    if (p.price_inr > 60000) addedPrice = v === 1 ? 10000 : 20000; // Premium brand tax
+    const displayStorage = targetStorage >= 1024 ? "1TB" : `${targetStorage}GB`;
+    const newName = p.name.replace(/\(.*?\)/, `(${targetRam}GB/${displayStorage})`);
     
-    let newStorage = p.storage_type;
-    
-    if (v === 1) {
-      newStorage = `${newStorage.split('/')[0].trim()} / 256GB`;
-    } else if (v === 2) {
-      // 512GB variants often force UFS 4.0 if the base was 3.1
-      if (newStorage.includes("3.1")) newStorage = "UFS 4.0 / 512GB";
-      else newStorage = `${newStorage.split('/')[0].trim()} / 512GB`;
+    const ufsVersion = p.storage_type.split('/')[0].trim();
+    let finalUfs = ufsVersion;
+    if (targetStorage >= 512 && ufsVersion.includes("3.1")) {
+      finalUfs = "UFS 4.0";
     }
+    const newStorage = `${finalUfs} / ${displayStorage}`;
     
-    // VFM naturally decreases as you pay more for just storage
     const vfmPenalty = (addedPrice / p.price_inr) * 10; 
     const newVfm = Math.max(4.0, p.ratings.vfm - vfmPenalty);
 
     return { 
       ...p, 
+      name: newName,
       price_inr: p.price_inr + addedPrice, 
       storage_type: newStorage,
       ratings: { ...p.ratings, vfm: newVfm }
@@ -39,7 +85,7 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
 
   const verdicts = useVerdict(virtualPhones);
 
-  const rows: { label: string; key: string; getValue: (p: PhoneWithRatings) => number | string; fmt?: (v: any) => string; higherBetter?: boolean }[] = [
+  const rows: { label: string; key: string; getValue: (p: PhoneWithRatings) => any; fmt?: (v: any, p: PhoneWithRatings) => string; higherBetter?: boolean }[] = [
     { label: "Price", key: "price", getValue: (p) => p.price_inr, fmt: formatINR, higherBetter: false },
     { label: "CPU Name", key: "cpu_name", getValue: (p) => p.cpu_name },
     { label: "AnTuTu Score", key: "antutu", getValue: (p) => p.antutu_score, fmt: (v) => v.toLocaleString(), higherBetter: true },
@@ -50,11 +96,10 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
     { label: "Battery", key: "bat", getValue: (p) => p.battery_mah, fmt: (v) => `${v} mAh`, higherBetter: true },
     { label: "Charging Speed", key: "chg", getValue: (p) => p.charging_w, fmt: (v) => `${v}W`, higherBetter: true },
     { label: "Est. Full Charge Time", key: "chg_time", getValue: (p) => p.charging_mins, fmt: (v) => `${v} mins`, higherBetter: false },
-    { label: "Main Camera", key: "cam", getValue: (p) => p.main_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
-    { label: "Selfie Camera", key: "sel", getValue: (p) => p.front_camera_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
+    { label: "Camera Rating", key: "cam", getValue: (p) => p.ratings.camera, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "Build Quality", key: "bld", getValue: (p) => p.build_quality_score, fmt: (v) => `${Number(v).toFixed(1)}/10`, higherBetter: true },
     { label: "OS Updates", key: "upd", getValue: (p) => p.os_updates_years, fmt: (v) => `${v} yrs`, higherBetter: true },
-    { label: "Launch Date", key: "launch", getValue: (p) => p.launch_date },
+    { label: "Launch Date", key: "launch", getValue: (p) => p.launch_date, fmt: (v) => formatLaunchDate(v as string) },
     { 
       label: "Updates Remaining", 
       key: "upd_left", 
@@ -63,6 +108,7 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
         return status.message;
       }
     },
+    { label: "Your Match Score", key: "match", getValue: (p) => calcMatchScore(p, weights), fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Performance Score", key: "g", getValue: (p) => p.ratings.performance, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Reliability", key: "d", getValue: (p) => p.ratings.reliability, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
     { label: "Camera Score", key: "c", getValue: (p) => p.ratings.camera, fmt: (v) => Number(v).toFixed(1), higherBetter: true },
@@ -109,25 +155,85 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
         <div className="overflow-x-auto hide-scrollbar">
           <table className="w-full min-w-[500px]">
             <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50">
+              <tr className="border-b border-neutral-200 bg-neutral-50/75">
                 <th className="sticky left-0 z-10 bg-neutral-50 px-2 sm:px-4 py-3 text-left text-[10px] sm:text-xs font-bold text-neutral-500 uppercase tracking-wider w-24 min-w-[96px] sm:w-40 sm:min-w-[160px] border-r border-neutral-200">Specification</th>
-                {virtualPhones.map((p) => (
-                  <th key={p.id} className="px-2 sm:px-4 py-3 sm:py-4 text-center min-w-[120px] sm:min-w-[160px]">
-                    <div className="flex flex-col items-center gap-2">
-                      <span className="text-sm font-bold text-neutral-900 tracking-tight">{p.name}</span>
-                      <select 
-                        value={variants[p.id] || 0}
-                        onChange={(e) => setVariants({...variants, [p.id]: Number(e.target.value)})}
-                        className="text-[10px] font-bold p-1 rounded border border-neutral-200 bg-neutral-50 text-neutral-700 outline-none w-full cursor-pointer hover:bg-neutral-100 transition-colors"
-                      >
-                        <option value={0}>Base Variant</option>
-                        <option value={1}>256GB Upgrade</option>
-                        <option value={2}>512GB Upgrade</option>
-                      </select>
-                      <button onClick={() => onRemove(p.id)} className="text-neutral-400 hover:text-red-500 transition-colors bg-white border border-neutral-200 rounded px-2 py-1 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><X size={10} /> Remove</button>
-                    </div>
-                  </th>
-                ))}
+                {virtualPhones.map((p) => {
+                  const originalPhone = phones.find(orig => orig.id === p.id) || p;
+                  return (
+                    <th key={p.id} className="px-2 sm:px-4 py-4 sm:py-6 text-center min-w-[140px] sm:min-w-[180px] border-r border-neutral-200 last:border-r-0">
+                      <div className="flex flex-col items-center gap-2">
+                        {/* Close Button at top corner */}
+                        <button 
+                          onClick={() => onRemove(p.id)} 
+                          className="self-end text-neutral-400 hover:text-red-500 transition-colors p-1 bg-white border border-neutral-200 rounded-full hover:shadow-sm"
+                          title="Remove from comparison"
+                        >
+                          <X size={10} />
+                        </button>
+
+                        {/* Device Image */}
+                        <div className="w-20 h-24 image-container-bg flex items-center justify-center rounded-xl p-1.5 border border-neutral-200/60 shadow-sm mb-1.5 relative overflow-hidden">
+                          <img 
+                            src={p.image_url} 
+                            alt={p.name} 
+                            className="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-300"
+                            loading="lazy" 
+                          />
+                        </div>
+
+                        {/* Device Name */}
+                        <span className="text-xs sm:text-sm font-black text-neutral-900 tracking-tight leading-snug line-clamp-2 h-9 flex items-center justify-center text-center px-1" title={p.name}>
+                          {p.name}
+                        </span>
+
+                        {/* Variant Segmented Pills */}
+                        <div className="flex flex-col sm:flex-row items-center gap-0.5 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-0.5 border border-neutral-200/80 w-full mt-1">
+                          {[0, 1, 2].map((val) => {
+                            const { targetRam, targetStorage } = getVariantConfig(originalPhone, val);
+                            const displayStorage = targetStorage >= 1024 ? "1TB" : `${targetStorage}GB`;
+                            const label = `${targetRam}GB/${displayStorage}`;
+                            const isSel = (variants[p.id] || 0) === val;
+                            return (
+                              <button
+                                key={val}
+                                onClick={() => setVariants({ ...variants, [p.id]: val })}
+                                className={`flex-1 w-full text-[8px] sm:text-[9px] font-black py-1 rounded transition-all leading-none ${
+                                  isSel
+                                    ? "bg-blue-600 text-white shadow-sm font-black"
+                                    : "text-neutral-555 hover:text-neutral-855 dark:text-neutral-400 dark:hover:text-neutral-200"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Buying links */}
+                        <div className="flex gap-1.5 w-full mt-1.5">
+                          <a 
+                            href={`https://www.amazon.in/s?k=${encodeURIComponent(p.name)}&tag=phonearena04-21`} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="flex-1 py-1 rounded bg-orange-50 hover:bg-orange-100 border border-orange-200/50 text-[8px] sm:text-[9px] font-bold text-orange-700 transition-colors uppercase tracking-wider flex items-center justify-center gap-0.5"
+                            title="Buy on Amazon"
+                          >
+                            Amazon
+                          </a>
+                          <a 
+                            href={`https://www.flipkart.com/search?q=${encodeURIComponent(p.name)}&affid=phonearena04`} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="flex-1 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-200/50 text-[8px] sm:text-[9px] font-bold text-blue-700 transition-colors uppercase tracking-wider flex items-center justify-center gap-0.5"
+                            title="Buy on Flipkart"
+                          >
+                            Flipkart
+                          </a>
+                        </div>
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -144,7 +250,7 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
                     {virtualPhones.map((p, idx) => {
                       const v = vals[idx];
                       const isWin = best !== null && v === best && virtualPhones.length > 1;
-                      const display = row.fmt ? row.fmt(v) : v.toString();
+                      const display = row.fmt ? row.fmt(v, p) : v.toString();
                       
                       return (
                         <td key={p.id} className={`px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium transition-colors ${isWin ? "text-blue-700 bg-blue-50/50" : "text-neutral-700"}`}>
@@ -204,70 +310,117 @@ export function ComparisonMatrix({ phones, onRemove }: { phones: PhoneWithRating
                 <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded">Avg Score: {((allRounderWinner.ratings.performance + allRounderWinner.ratings.camera + allRounderWinner.ratings.reliability + allRounderWinner.ratings.os + allRounderWinner.ratings.vfm) / 5).toFixed(1)}/10</span>
               </div>
             </div>
-            {/* Gaming & Performance */}
-            <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
-               <div className="flex items-center gap-2 text-neutral-500 mb-3">
-                <Zap size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Best for Performance</span>
-              </div>
-              <p className="text-neutral-900 font-extrabold text-lg">{performanceWinner.name}</p>
-              <p className="text-neutral-500 text-xs mt-1">Powered by <strong className="text-neutral-700">{performanceWinner.cpu_name}</strong></p>
-              <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
-                <span>Source: AnTuTu / Geekbench</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {performanceWinner.ratings.performance.toFixed(1)}/10</span>
-              </div>
-            </div>
+            {/* Category Cards */}
+            {[
+              {
+                id: "perf",
+                title: "Gaming & Performance",
+                icon: <Zap size={16} />,
+                source: "AnTuTu / Geekbench",
+                key: (p: PhoneWithRatings) => p.ratings.performance,
+                getLabel: (p: PhoneWithRatings) => ({
+                  bold: p.cpu_name,
+                  normal: p.name
+                })
+              },
+              {
+                id: "cam",
+                title: "Photography & Video",
+                icon: <Camera size={16} />,
+                source: "DXOMARK Standards",
+                key: (p: PhoneWithRatings) => p.ratings.camera,
+                getLabel: undefined
+              },
+              {
+                id: "rel",
+                title: "Long-Term Reliability",
+                icon: <Shield size={16} />,
+                source: "OEM Policies",
+                key: (p: PhoneWithRatings) => p.ratings.reliability,
+                getLabel: undefined
+              },
+              {
+                id: "os",
+                title: "OS Experience",
+                icon: <Smartphone size={16} />,
+                source: "OS Curation Matrix",
+                key: (p: PhoneWithRatings) => p.ratings.os,
+                getLabel: (p: PhoneWithRatings) => {
+                  const isApple = p.brand.toLowerCase() === "apple";
+                  const n = p.name.toLowerCase();
+                  let osVer = isApple ? "iOS 19" : "Android 15";
+                  if (n.includes("s24") || n.includes("pixel 8") || n.includes("12")) {
+                    osVer = isApple ? "iOS 18" : "Android 14";
+                  } else if (n.includes("s25") || n.includes("pixel 9") || n.includes("13") || n.includes("15")) {
+                    osVer = isApple ? "iOS 19" : "Android 15";
+                  } else if (n.includes("s26") || n.includes("pixel 10") || n.includes("14")) {
+                    osVer = isApple ? "iOS 20" : "Android 16";
+                  }
+                  return {
+                    bold: osVer,
+                    normal: p.name
+                  };
+                }
+              },
+              {
+                id: "vfm",
+                title: "Value For Money",
+                icon: <Star size={16} />,
+                source: "Market Aggregation",
+                key: (p: PhoneWithRatings) => p.ratings.vfm,
+                getLabel: undefined
+              }
+            ].map(cat => {
+              const ranked = [...virtualPhones].sort((a, b) => cat.key(b) - cat.key(a));
+              return (
+                <div key={cat.id} className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow flex flex-col h-full">
+                  <div className="flex items-center gap-2 text-neutral-500 mb-3">
+                    {cat.icon} <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">{cat.title}</span>
+                  </div>
+                  
+                  {/* Detailed Ranking List */}
+                  <div className="flex-1 space-y-2 mt-2">
+                    {ranked.map((p, index) => {
+                      const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index+1}.`;
+                      const isWinner = index === 0;
 
-            {/* Camera */}
-            <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 text-neutral-500 mb-3">
-                <Camera size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Best for Photography</span>
-              </div>
-              <p className="text-neutral-900 font-extrabold text-lg">{cameraWinner.name}</p>
-              <p className="text-neutral-500 text-xs mt-1">Highest hardware capability</p>
-              <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
-                <span>Source: DXOMARK Standards</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {cameraWinner.ratings.camera.toFixed(1)}/10</span>
-              </div>
-            </div>
-            
-            {/* Durability */}
-            <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 text-neutral-500 mb-3">
-                <Shield size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Long-Term Reliability</span>
-              </div>
-              <p className="text-neutral-900 font-extrabold text-lg">{reliabilityWinner.name}</p>
-              <p className="text-neutral-500 text-xs mt-1">{reliabilityWinner.os_updates_years} Years OS Updates + Top Build</p>
-              <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
-                <span>Source: OEM Policies</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {reliabilityWinner.ratings.reliability.toFixed(1)}/10</span>
-              </div>
-            </div>
+                      let labelNode: React.ReactNode;
+                      let tooltipText = p.name;
+                      if (cat.getLabel) {
+                        const { bold, normal } = cat.getLabel(p);
+                        tooltipText = `${bold} (${normal})`;
+                        labelNode = (
+                          <span className="text-[11px] truncate" title={tooltipText}>
+                            <strong className={`${isWinner ? 'font-extrabold text-blue-900' : 'font-bold text-neutral-800'}`}>{bold}</strong>{" "}
+                            <span className="font-normal text-neutral-500">({normal})</span>
+                          </span>
+                        );
+                      } else {
+                        labelNode = (
+                          <span className={`text-[11px] truncate ${isWinner ? 'font-extrabold text-blue-900' : 'font-semibold text-neutral-700'}`} title={p.name}>
+                            {p.name}
+                          </span>
+                        );
+                      }
 
-            {/* OS Experience */}
-            <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 text-neutral-500 mb-3">
-                <Smartphone size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Best OS Experience</span>
-              </div>
-              <p className="text-neutral-900 font-extrabold text-lg">{osWinner.name}</p>
-              <p className="text-neutral-500 text-xs mt-1">Premium and bloat-free UI tier rating</p>
-              <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
-                <span>Source: OS Curation Matrix</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {osWinner.ratings.os.toFixed(1)}/10</span>
-              </div>
-            </div>
-
-            {/* VFM */}
-            <div className="rounded border border-neutral-200 bg-white p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 text-neutral-500 mb-3">
-                <Star size={16} /> <span className="font-bold text-xs uppercase tracking-wider text-neutral-700">Value For Money</span>
-              </div>
-              <p className="text-neutral-900 font-extrabold text-lg">{vfmWinner.name}</p>
-              <p className="text-neutral-500 text-xs mt-1">Best specification-to-price ratio</p>
-              <div className="mt-4 flex items-center justify-between text-[10px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
-                <span>Source: Market Aggregation</span>
-                <span className="bg-neutral-100 text-neutral-600 px-2 py-1 rounded">Score: {vfmWinner.ratings.vfm.toFixed(1)}/10</span>
-              </div>
-            </div>
+                      return (
+                        <div key={p.id} className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors ${isWinner ? 'bg-blue-50/60 border-blue-200 shadow-sm' : 'bg-neutral-50/50 border-neutral-100 hover:bg-neutral-50'}`}>
+                          <div className="flex items-center gap-2 overflow-hidden flex-1 pr-2">
+                            <span className="text-[11px] w-5 text-center flex-shrink-0">{medal}</span>
+                            {labelNode}
+                          </div>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${isWinner ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-neutral-600 border border-neutral-200 shadow-sm'}`}>{cat.key(p).toFixed(1)}/10</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  
+                  <div className="mt-5 flex items-center justify-between text-[9px] uppercase font-bold text-neutral-400 border-t border-neutral-100 pt-3">
+                    <span>Source: {cat.source}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

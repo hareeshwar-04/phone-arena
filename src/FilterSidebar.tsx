@@ -14,6 +14,8 @@ interface FilterSidebarProps {
   availableScreenTypes: string[];
   availableRamTypes: string[];
   availableStorageTypes: string[];
+  availableStorageCapacities: number[];
+  availableRamCapacities: number[];
   availableProcessorTiers: string[];
   phoneCount: number;
 }
@@ -87,6 +89,7 @@ function RangeSlider({ label, min, max, step, value, onChange, formatValue }: {
 export function FilterSidebar({
   brands, filters, onFilterChange,
   availableScreenTypes, availableRamTypes, availableStorageTypes, availableProcessorTiers,
+  availableStorageCapacities, availableRamCapacities,
   phoneCount
 }: FilterSidebarProps) {
   const update = useCallback((partial: Partial<FilterConfig>) => {
@@ -119,7 +122,7 @@ export function FilterSidebar({
     filters.batteryMin > 0 || filters.chargingMin > 0 ||
     filters.refreshRateMin > 0 || filters.screenTypes.length > 0 ||
     filters.processorTiers.length > 0 || filters.ramTypes.length > 0 ||
-    filters.storageTypes.length > 0 || filters.minCameraScore > 0 ||
+    filters.storageTypes.length > 0 || (filters.storageCapacities || []).length > 0 || (filters.ramCapacities || []).length > 0 || filters.minCameraScore > 0 ||
     filters.minOsYears > 0;
 
   return (
@@ -190,6 +193,44 @@ export function FilterSidebar({
           <div className="flex justify-between text-[10px] text-neutral-400 mt-1 font-medium">
             <span>{formatINR(5000)}</span><span>{formatINR(200000)}</span>
           </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Memory & Storage Capacity */}
+      <CollapsibleSection title="RAM and Storage" icon={<HardDrive size={14} />} defaultOpen={true}>
+        <div className="pb-1">
+          {availableRamCapacities && availableRamCapacities.length > 0 && (
+            <div className="mb-3">
+              <span className="text-[11px] font-medium text-neutral-600 mb-1.5 block">RAM Size</span>
+              <ChipSelect
+                options={availableRamCapacities.map(c => `${c}GB`)}
+                selected={(filters.ramCapacities || []).map(c => `${c}GB`)}
+                onToggle={(v) => {
+                  const val = parseInt(v);
+                  const current = filters.ramCapacities || [];
+                  const next = current.includes(val) ? current.filter((x) => x !== val) : [...current, val];
+                  update({ ramCapacities: next });
+                }}
+                color="green"
+              />
+            </div>
+          )}
+          {availableStorageCapacities && availableStorageCapacities.length > 0 && (
+            <div className="mb-3">
+              <span className="text-[11px] font-medium text-neutral-600 mb-1.5 block">Storage Size</span>
+              <ChipSelect
+                options={availableStorageCapacities.map(c => c >= 1024 ? `${c/1024}TB` : `${c}GB`)}
+                selected={(filters.storageCapacities || []).map(c => c >= 1024 ? `${c/1024}TB` : `${c}GB`)}
+                onToggle={(v) => {
+                  const val = v.includes('TB') ? parseInt(v) * 1024 : parseInt(v);
+                  const current = filters.storageCapacities || [];
+                  const next = current.includes(val) ? current.filter((x) => x !== val) : [...current, val];
+                  update({ storageCapacities: next });
+                }}
+                color="blue"
+              />
+            </div>
+          )}
         </div>
       </CollapsibleSection>
 
@@ -320,6 +361,7 @@ export function FilterSidebar({
           )}
         </div>
       </CollapsibleSection>
+
 
       {/* Camera */}
       <CollapsibleSection title="Camera" icon={<Camera size={14} />}>

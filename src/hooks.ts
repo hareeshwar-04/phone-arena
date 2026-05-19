@@ -12,7 +12,25 @@ import type { PhoneSpec, PersonaRatings, PhoneWithRatings, WeightConfig } from "
 //  • CAPPED INTELLIGENTLY: Diminishing returns above inflection points
 //  • MARKET-CALIBRATED: VFM uses expected price for spec tier
 
-// ── Helpers ────────────────────────────────────────────────────
+export const extractGB = (str: string) => {
+  const match = str.match(/(\d+)(GB|TB)/i);
+  if (!match) return 0;
+  let val = parseInt(match[1]);
+  if (match[2].toUpperCase() === 'TB') val *= 1024;
+  return val;
+};
+
+export const getRamStorage = (name: string) => {
+  const match = name.match(/\((.*?)\)/);
+  if (!match) return { ram: 0, storage: 0 };
+  const parts = match[1].split('/');
+  if (parts.length === 2) {
+    return { ram: extractGB(parts[0]), storage: extractGB(parts[1]) };
+  } else if (parts.length === 1) {
+    return { ram: 0, storage: extractGB(parts[0]) };
+  }
+  return { ram: 0, storage: 0 };
+};
 
 /** Clamp + round to 1 decimal within [1, 10] */
 function finalize(score: number): number {
@@ -31,6 +49,20 @@ export interface OSUpdatesStatus {
   message: string;
   badgeClass: string;
   warningText?: string;
+}
+
+export function formatLaunchDate(dateStr: string): string {
+  if (!dateStr || !dateStr.includes("-")) return dateStr;
+  const [year, month] = dateStr.split("-");
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+  const mIndex = parseInt(month, 10) - 1;
+  if (mIndex >= 0 && mIndex < 12) {
+    return `${monthNames[mIndex]} ${year}`;
+  }
+  return dateStr;
 }
 
 export function getOSUpdatesStatus(launchDateStr: string, osUpdatesYears: number): OSUpdatesStatus {
@@ -82,40 +114,21 @@ export function getOSUpdatesStatus(launchDateStr: string, osUpdatesYears: number
 // ── 1. PERFORMANCE SCORE ───────────────────────────────────────
 // AnTuTu is the most objective cross-chip benchmark.
 // Weighting: raw AnTuTu (60%) + refresh rate (20%) + fast charge (12%) + RAM tier (8%)
-export function calcPerformance(p: PhoneSpec): number {
+export function calcPerformance(p: PhoneSpec, maxAntutu: number = 3300000): number {
   // AnTuTu → 1–10 via log scale. 
-  // 240K (Unisoc budget) = 1.0, 3.3M (SD8 Elite Gen5) ≈ 10.0
+  // 200K (budget) = 1.0, maxAntutu (best chip in current db) = 10.0
+  const maxLimit = maxAntutu > 200000 ? maxAntutu : 3300000;
   const antutuScore = p.antutu_score > 0
-    ? Math.max(1, Math.min(10, (Math.log10(p.antutu_score) - Math.log10(200000)) / (Math.log10(3500000) - Math.log10(200000)) * 9 + 1))
+    ? Math.max(1, Math.min(10, (Math.log10(p.antutu_score) - Math.log10(200000)) / (Math.log10(maxLimit) - Math.log10(200000)) * 9 + 1))
     : p.raw_cpu_score; // fallback to manual score if antutu missing
 
-  // Refresh rate: 60Hz=1, 90Hz=4, 120Hz=7, 144Hz=8.5, 165Hz+=10
-  const refreshScore = p.display_refresh_hz >= 165 ? 10
-    : p.display_refresh_hz >= 144 ? 8.5
-    : p.display_refresh_hz >= 120 ? 7.0
-    : p.display_refresh_hz >= 90  ? 4.0
-    : 1.0;
-
-  // Fast charging: 15W=1, 45W=4, 80W=7, 100W=8.5, 120W+=10
-  const chargingScore = p.charging_w >= 120 ? 10
-    : p.charging_w >= 100 ? 8.5
-    : p.charging_w >= 80  ? 7.0
-    : p.charging_w >= 45  ? 4.5
-    : p.charging_w >= 25  ? 3.0
-    : p.charging_w >= 18  ? 2.0
-    : 1.0;
-
-  // RAM tier: LPDDR4X=3, LPDDR5=6, LPDDR5X=10
+  // RAM type tier: LPDDR4X=3, LPDDR5=6, LPDDR5X=10
   const ramScore = p.ram_type.includes("5X") ? 10
     : p.ram_type.includes("5") ? 6
     : 3;
 
-  // Storage tier: UFS 2.2=2, UFS 3.1=5.5, UFS 4.0=10
-  const storageScore = p.storage_type.includes("4.0") ? 10
-    : p.storage_type.includes("3.1") ? 5.5
-    : 2.0;
-
-  const raw = antutuScore * 0.55 + refreshScore * 0.20 + chargingScore * 0.12 + ramScore * 0.08 + storageScore * 0.05;
+  // Performance is solely based on Chipset (85%) and RAM Type (15%)
+  const raw = antutuScore * 0.85 + ramScore * 0.15;
   return finalize(raw);
 }
 
@@ -254,8 +267,8 @@ export function calcOSRating(brand: string, price: number): number {
 }
 
 // ── Master compute function ────────────────────────────────────
-export function computeRatings(p: PhoneSpec): PersonaRatings {
-  const performance = calcPerformance(p);
+export function computeRatings(p: PhoneSpec, maxAntutu: number = 3300000): PersonaRatings {
+  const performance = calcPerformance(p, maxAntutu);
   const camera      = calcCamera(p);
   const reliability = calcReliability(p);
   const os          = calcOSRating(p.brand, p.price_inr);
@@ -267,6 +280,8 @@ export function computeRatings(p: PhoneSpec): PersonaRatings {
 
 export function usePhoneRatings(phones: PhoneSpec[]): PhoneWithRatings[] {
   return useMemo(() => {
+    const maxAntutu = phones.reduce((max, p) => p.antutu_score > max ? p.antutu_score : max, 1000000);
+
     return phones.map((p) => {
       // Normalize brand casing to group duplicates (e.g. "oppo" and "OPPO")
       let brand = p.brand;
@@ -286,6 +301,9 @@ export function usePhoneRatings(phones: PhoneSpec[]): PhoneWithRatings[] {
       else if (brand.toUpperCase() === "TECNO") brand = "Tecno";
 
       let name = p.name;
+      // Strip 5G case-insensitively
+      name = name.replace(/\b5G\b/gi, "").replace(/\s+/g, " ").trim();
+
       // Also fix the name starts prefix casing
       const oldBrandPrefix = p.brand + " ";
       const newBrandPrefix = brand + " ";
@@ -297,10 +315,25 @@ export function usePhoneRatings(phones: PhoneSpec[]): PhoneWithRatings[] {
         ...p,
         brand,
         name,
-        ratings: computeRatings({ ...p, brand, name })
+        ratings: computeRatings({ ...p, brand, name }, maxAntutu)
       };
     });
   }, [phones]);
+}
+
+export function calcMatchScore(phone: PhoneWithRatings, weights: WeightConfig): number {
+  const total = 
+    (weights.performanceEnabled ? weights.performance : 0) +
+    (weights.reliabilityEnabled ? weights.reliability : 0) +
+    (weights.cameraEnabled ? weights.camera : 0) +
+    (weights.osEnabled ? weights.os : 0) || 1;
+    
+  return Math.round(((
+    (weights.performanceEnabled ? phone.ratings.performance * weights.performance : 0) +
+    (weights.reliabilityEnabled ? phone.ratings.reliability * weights.reliability : 0) +
+    (weights.cameraEnabled ? phone.ratings.camera * weights.camera : 0) +
+    (weights.osEnabled ? phone.ratings.os * weights.os : 0)
+  ) / total) * 10) / 10;
 }
 
 export function useWeightedSort(
@@ -308,27 +341,7 @@ export function useWeightedSort(
   weights: WeightConfig
 ): PhoneWithRatings[] {
   return useMemo(() => {
-    const total = 
-      (weights.performanceEnabled ? weights.performance : 0) +
-      (weights.reliabilityEnabled ? weights.reliability : 0) +
-      (weights.cameraEnabled ? weights.camera : 0) +
-      (weights.osEnabled ? weights.os : 0) || 1;
-      
-    return [...phones].sort((a, b) => {
-      const scoreA = (
-        (weights.performanceEnabled ? a.ratings.performance * weights.performance : 0) +
-        (weights.reliabilityEnabled ? a.ratings.reliability * weights.reliability : 0) +
-        (weights.cameraEnabled ? a.ratings.camera * weights.camera : 0) +
-        (weights.osEnabled ? a.ratings.os * weights.os : 0)
-      ) / total;
-      const scoreB = (
-        (weights.performanceEnabled ? b.ratings.performance * weights.performance : 0) +
-        (weights.reliabilityEnabled ? b.ratings.reliability * weights.reliability : 0) +
-        (weights.cameraEnabled ? b.ratings.camera * weights.camera : 0) +
-        (weights.osEnabled ? b.ratings.os * weights.os : 0)
-      ) / total;
-      return scoreB - scoreA;
-    });
+    return [...phones].sort((a, b) => calcMatchScore(b, weights) - calcMatchScore(a, weights));
   }, [phones, weights]);
 }
 
@@ -407,83 +420,154 @@ export function useVerdict(phones: PhoneWithRatings[]): string[] {
  * Dynamically computes practical Pros and Cons based on physical specs
  * and calculated ratings to provide expert, reviewer-grade summaries.
  */
-export function getProsAndCons(p: PhoneWithRatings): { pros: string[]; cons: string[] } {
+export function getProsAndCons(p: PhoneWithRatings, allPhones?: PhoneWithRatings[]): { pros: string[]; cons: string[] } {
   const pros: string[] = [];
-  const cons: string[] = [];
 
-  // --- Dynamic Pros ---
-  if (p.ratings.performance >= 8.5) {
-    pros.push(`Flagship performance with over ${(p.antutu_score / 100000).toFixed(1)}L AnTuTu score.`);
-  } else if (p.ratings.performance >= 6.5 && p.price_inr <= 25000) {
-    pros.push("Outstanding speed and gaming performance in the budget segment.");
+  // --- Dynamic Segment Averages Calculation ---
+  let avgPerformance = 7.0;
+  let avgCamera = 7.0;
+  let avgReliability = 7.0;
+  let avgOS = 7.0;
+  let hasAverages = false;
+
+  if (allPhones && allPhones.length > 5) {
+    const margin = p.price_inr * 0.25; // 25% price margin to group peers
+    const peers = allPhones.filter(ph => Math.abs(ph.price_inr - p.price_inr) <= margin && ph.id !== p.id);
+    if (peers.length >= 2) {
+      const sumPerf = peers.reduce((acc, ph) => acc + ph.ratings.performance, 0);
+      const sumCam = peers.reduce((acc, ph) => acc + ph.ratings.camera, 0);
+      const sumRel = peers.reduce((acc, ph) => acc + ph.ratings.reliability, 0);
+      const sumOS = peers.reduce((acc, ph) => acc + ph.ratings.os, 0);
+      avgPerformance = sumPerf / peers.length;
+      avgCamera = sumCam / peers.length;
+      avgReliability = sumRel / peers.length;
+      avgOS = sumOS / peers.length;
+      hasAverages = true;
+    }
+  }
+
+  // Fallback to static expected standards if not enough peers exist
+  if (!hasAverages) {
+    if (p.price_inr > 75000) {
+      avgPerformance = 8.5;
+      avgCamera = 8.5;
+      avgReliability = 8.5;
+      avgOS = 8.5;
+    } else if (p.price_inr > 35000) {
+      avgPerformance = 7.5;
+      avgCamera = 7.0;
+      avgReliability = 7.5;
+      avgOS = 7.5;
+    } else {
+      avgPerformance = 6.0;
+      avgCamera = 5.5;
+      avgReliability = 6.0;
+      avgOS = 6.0;
+    }
+  }
+
+  // --- Dynamic Pros (Relative to Segment) ---
+  if (p.ratings.performance > avgPerformance + 0.3) {
+    pros.push(`Excellent performance (${p.ratings.performance.toFixed(1)}/10), beating the segment average of ${avgPerformance.toFixed(1)}/10.`);
+  } else if (p.ratings.performance >= 8.5) {
+    pros.push(`Flagship processing speeds with a massive AnTuTu output.`);
   }
 
   if (p.screen_type.includes("AMOLED") || p.screen_type.includes("OLED")) {
-    pros.push(`Premium, vibrant ${p.screen_type} screen with deep blacks.`);
+    pros.push(`Premium, vibrant ${p.screen_type} display with deep blacks.`);
   }
 
   if (p.display_refresh_hz >= 120) {
-    pros.push(`Super-smooth ${p.display_refresh_hz}Hz refresh rate display.`);
+    pros.push(`Super-smooth ${p.display_refresh_hz}Hz refresh rate scrolling.`);
   }
 
-  if (p.ratings.camera >= 8.0) {
-    pros.push(`Top-tier camera system with a ${p.main_camera_score.toFixed(1)}/10 rating.`);
+  if (p.ratings.camera > avgCamera + 0.3) {
+    pros.push(`Superior camera quality (${p.ratings.camera.toFixed(1)}/10) compared to the segment average of ${avgCamera.toFixed(1)}/10.`);
   }
 
   if (p.battery_mah >= 6000) {
-    pros.push(`Massive ${p.battery_mah}mAh battery for easy 2-day use.`);
+    pros.push(`Massive ${p.battery_mah}mAh battery provides easy 2-day durability.`);
   } else if (p.battery_mah >= 5000 && p.ratings.performance < 7.5) {
-    pros.push(`Generous ${p.battery_mah}mAh capacity with highly power-efficient hardware.`);
+    pros.push(`Power-efficient hardware pairs perfectly with the ${p.battery_mah}mAh capacity.`);
   }
 
   if (p.charging_w >= 80) {
-    pros.push(`Blazing fast ${p.charging_w}W charging gets you full in minutes.`);
+    pros.push(`Blazing fast ${p.charging_w}W charging juice-up times.`);
   }
 
   if (p.os_updates_years >= 5) {
-    pros.push(`Long-term support with ${p.os_updates_years} years of promised OS updates.`);
+    pros.push(`Strong support lifecycle with ${p.os_updates_years} promised OS upgrades.`);
   }
 
-  if (p.build_quality_score >= 8.5) {
-    pros.push(`Solid physical durability (${p.build_quality_score.toFixed(1)}/10 build score).`);
+  // --- Dynamic Cons (Aggressive & Price-Aware) ---
+  const severeCons: string[] = [];
+  const mediocreCons: string[] = [];
+  const otherCons: string[] = [];
+
+  const { storage } = getRamStorage(p.name);
+  if (storage > 0 && storage <= 128) {
+    severeCons.push("Severely limited 128GB storage: Under 2026 usage standards with heavy OS bloat and app updates, this will fill up extremely fast.");
   }
 
-  if (p.ratings.vfm >= 8.5) {
-    pros.push("Incredible value for money — massive specs for the price.");
+  // Camera Con
+  if (p.ratings.camera < avgCamera + 0.2) {
+    if (p.ratings.camera < avgCamera - 0.3) {
+      const diff = (avgCamera - p.ratings.camera).toFixed(1);
+      severeCons.push(`Below-Average Camera: Scores ${p.ratings.camera.toFixed(1)}/10, lagging ${diff} pts behind the segment standard (${avgCamera.toFixed(1)}/10).`);
+    } else {
+      mediocreCons.push(`Mediocre/Average Camera: Scores ${p.ratings.camera.toFixed(1)}/10, barely matching the segment average (${avgCamera.toFixed(1)}/10) with no standout quality.`);
+    }
   }
 
-  // --- Dynamic Cons ---
-  if (p.raw_ui_score < 6.0) {
-    cons.push("Software experience includes heavy pre-installed bloatware or ads.");
+  // Performance Con (strictly below average)
+  const isApple = p.brand.toLowerCase() === "apple";
+  if (p.ratings.performance < avgPerformance - 0.3 && !isApple) {
+    const diff = (avgPerformance - p.ratings.performance).toFixed(1);
+    severeCons.push(`Below-Average Performance: Chip speed scores ${p.ratings.performance.toFixed(1)}/10, lagging ${diff} pts behind the segment average (${avgPerformance.toFixed(1)}/10).`);
+  }
+
+  // Reliability Con (strictly below average)
+  if (p.ratings.reliability < avgReliability - 0.3) {
+    const diff = (avgReliability - p.ratings.reliability).toFixed(1);
+    severeCons.push(`Below-Average Reliability: Scores ${p.ratings.reliability.toFixed(1)}/10, falling ${diff} pts behind segment expectations (${avgReliability.toFixed(1)}/10).`);
+  }
+
+  // OS Con (strictly below average)
+  if (p.ratings.os < avgOS - 0.3) {
+    const diff = (avgOS - p.ratings.os).toFixed(1);
+    severeCons.push(`Below-Average Software: OS rating is ${p.ratings.os.toFixed(1)}/10, lagging ${diff} pts behind the segment standard (${avgOS.toFixed(1)}/10).`);
+  }
+
+  // Physical specifications limitations
+  if (p.raw_ui_score < 5.0) {
+    otherCons.push("Bloatware nightmare: Software is loaded with annoying ads and pre-installed junk.");
   }
 
   if (p.screen_type.includes("LCD") || p.screen_type.includes("IPS")) {
-    cons.push(`IPS LCD screen lacks the color punch and black levels of AMOLED panels.`);
+    otherCons.push("Outdated IPS LCD display—you completely lose out on AMOLED true blacks and punchy colors.");
   }
 
   if (p.display_refresh_hz <= 60) {
-    cons.push("Dated 60Hz display refresh rate feels sluggish during scrolling.");
+    otherCons.push("Dated 60Hz refresh rate; feels noticeably laggy and sluggish compared to 120Hz standards.");
   }
 
-  if (p.charging_w <= 18) {
-    cons.push(`Slow ${p.charging_w}W charging speeds up recharge times significantly.`);
+  if (p.charging_w <= 18 && p.price_inr > 15000) {
+    otherCons.push(`Painfully slow ${p.charging_w}W charging speeds—takes far too long to top up.`);
   }
 
-  if (p.os_updates_years <= 2) {
-    cons.push(`Short software lifespan with only ${p.os_updates_years} years of OS updates.`);
-  }
-
-  if (p.ratings.camera < 5.0) {
-    cons.push("Mediocre camera capabilities in low-light and high-contrast environments.");
+  if (p.os_updates_years <= 1) {
+    otherCons.push("Dead on arrival software: Essentially zero long-term OS update support.");
   }
 
   if (p.ratings.vfm < 5.5) {
-    cons.push("Premium pricing results in a lower value-for-money score.");
+    otherCons.push("Horrible value for money. You are severely overpaying for the hardware you get.");
   }
 
-  if (p.battery_mah < 4500) {
-    cons.push(`Small ${p.battery_mah}mAh battery may struggle to survive a full day.`);
+  if (p.battery_mah < 4200) {
+    otherCons.push(`Tiny ${p.battery_mah}mAh battery guarantees you will be hunting for a charger by afternoon.`);
   }
+
+  const cons = [...severeCons, ...mediocreCons, ...otherCons];
 
   // Fallbacks to guarantee content
   if (pros.length === 0) {

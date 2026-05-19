@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon, Palette } from "lucide-react";
+import { Smartphone, Trophy, X, SlidersHorizontal, Monitor, Layers, Search, Sparkles, BookOpen, Sun, Moon, Palette, Zap, Camera } from "lucide-react";
 import type { PhoneSpec, WeightConfig, FilterConfig } from "./types";
 import { mockPhones, DEFAULT_FILTERS } from "./types";
-import { usePhoneRatings, useWeightedSort, useShareBattle } from "./hooks";
+import { usePhoneRatings, useWeightedSort, useShareBattle, getRamStorage } from "./hooks";
 import { PhoneCard, SkeletonCard } from "./PhoneCard";
 import { FilterSidebar } from "./FilterSidebar";
 import { ComparisonMatrix } from "./ComparisonMatrix";
@@ -12,20 +12,291 @@ import { SpecGuideModal } from "./SpecGuideModal";
 
 const SHEET_URL = "https://opensheet.elk.sh/1yhvi3qx40ijUz2RyQ7Vojfxx3ZGoyWcaUgTisWfOGmM/Sheet1";
 type ViewMode = "discover" | "compare";
-type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "os" | "battery" | "newest";
+type SortOption = "match" | "price_asc" | "price_desc" | "performance" | "camera" | "os" | "battery" | "newest" | "ram" | "storage";
+
+
+
+const CPU_ANTUTU_MAP: Record<string, number> = {
+  // Flagships (3M+)
+  "Snapdragon 8 Elite Gen 5": 3300000,
+  "Snapdragon 8 Gen 5": 3000000,
+  "Snapdragon 8 Elite": 2850000,
+  "Dimensity 9500": 3000000,
+  "Dimensity 9400": 2750000,
+  "Exynos 2600": 2500000,
+
+  // High-End (1.5M - 2.5M)
+  "Bionic A18 Pro": 1800000,
+  "Apple A19 Pro": 2150000,
+  "Apple A19": 1900000,
+  "Bionic A18": 1600000,
+  "Bionic A17 Pro": 1550000,
+  "Bionic A16": 1400000,
+  "Bionic A15": 1150000,
+  "Apple A18 Pro": 1800000,
+  "Apple A18": 1600000,
+  "Apple A16": 1400000,
+  "Apple A15": 1150000,
+  "Snapdragon 8 Gen 3": 2050000,
+  "Snapdragon 8s Gen 4": 1750000,
+  "Snapdragon 8s Gen 3": 1550000,
+  "Snapdragon 8 Gen 2": 1600000,
+  "Snapdragon 8+ Gen 1": 1350000,
+  "Snapdragon 8 Gen 1": 1150000,
+  "Dimensity 9300": 2200000,
+  "Dimensity 9300+": 2250000,
+  "Dimensity 9200": 1450000,
+  "Dimensity 9200+": 1500000,
+  "Dimensity 8500 Ultra": 1500000,
+  "Dimensity 8500 Extreme": 1500000,
+  "Dimensity 8500": 1450000,
+  "Dimensity 8450": 1350000,
+  "Dimensity 8400 Ultra": 1450000,
+  "Dimensity 8400": 1400000,
+  "Dimensity 8350": 1400000,
+  "Dimensity 8300-Ultra": 1400000,
+  "Dimensity 8300": 1350000,
+  "Exynos 2400": 1700000,
+  "Tensor G4": 1250000,
+  "Tensor G3": 1050000,
+
+  // Upper Mid-Range (700K - 1.5M)
+  "Snapdragon 7+ Gen 3": 1360000,
+  "Snapdragon 7s Gen 4": 950000,
+  "Snapdragon 7 Gen 4": 1150000,
+  "Snapdragon 7 Gen4": 1150000,
+  "Snapdragon 7 Gen 3": 850000,
+  "Snapdragon 7s Gen 3": 800000,
+  "Snapdragon 7+ Gen 2": 1100000,
+  "Snapdragon 7s Gen 2": 610000,
+  "Dimensity 8200": 950000,
+  "Dimensity 7400 Turbo": 850000,
+  "Dimensity 7400 Apex": 850000,
+  "Dimensity 7400 Ultra": 850000,
+  "Dimensity 7400": 800000,
+  "Dimensity 7360 Turbo": 780000,
+  "Dimensity 7300 Ultra": 750000,
+  "Dimensity 7300": 740000,
+  "Dimensity 7200 Ultra": 720000,
+  "Dimensity 7200": 700000,
+  "Exynos 1480": 710000,
+  "Exynos 1580": 900000,
+
+  // Mid-Range & Budget (Below 700K)
+  "Snapdragon 6 Gen 4": 750000,
+  "Snapdragon 6S Gen4": 750000,
+  "Snapdragon 6 Gen 3": 620000,
+  "Snapdragon 6 Gen 1": 550000,
+  "Snapdragon 6s Gen 3": 480000,
+  "Dimensity 7050": 580000,
+  "Dimensity 7025 Ultra": 500000,
+  "Dimensity 7025": 480000,
+  "Dimensity 6400 Max": 460000,
+  "Dimensity 6400 Turbo": 460000,
+  "Dimensity 6400": 450000,
+  "Dimensity 6360 Max": 450000,
+  "Dimensity 6300": 420000,
+  "Dimensity 6100+": 400000,
+  "Dimensity 6080": 420000,
+  "Exynos 1680": 580000,
+  "Exynos 1380": 560000,
+  "Exynos 1330": 430000,
+  "Snapdragon 4 Gen 2": 450000,
+  "Snapdragon 4s Gen 2": 400000,
+  "Snapdragon 4 Gen 1": 380000,
+  "Snapdragon 695": 450000,
+  "Unisoc T8300": 310000,
+  "Unisoc T760": 360000,
+  "Unisoc T7250": 250000,
+  "Helio G85": 240000,
+  "Helio G99": 420000
+};
+
+function getReliableAnTuTu(cpu: string, currentScore: number): number {
+  const cleanCpu = cpu.trim();
+  if (CPU_ANTUTU_MAP[cleanCpu] !== undefined) {
+    return CPU_ANTUTU_MAP[cleanCpu];
+  }
+  
+  // Regex fallback logic
+  const c = cleanCpu.toLowerCase();
+  if (c.includes("elite gen 5") || c.includes("gen 5")) return 3200000;
+  if (c.includes("elite")) return 2850000;
+  if (c.includes("9500")) return 3000000;
+  if (c.includes("9400")) return 2750000;
+  if (c.includes("9300")) return 2200000;
+  if (c.includes("a19 pro")) return 2150000;
+  if (c.includes("a19")) return 1900000;
+  if (c.includes("a18 pro")) return 1800000;
+  if (c.includes("a18")) return 1600000;
+  if (c.includes("a17 pro")) return 1550000;
+  if (c.includes("a16")) return 1400000;
+  if (c.includes("8 gen 3")) return 2050000;
+  if (c.includes("8s gen 4")) return 1750000;
+  if (c.includes("8s gen 3")) return 1550000;
+  if (c.includes("8 gen 2")) return 1600000;
+  if (c.includes("7 gen 4")) return 1150000;
+  if (c.includes("7s gen 4")) return 950000;
+  if (c.includes("7 gen 3")) return 850000;
+  if (c.includes("7s gen 3")) return 800000;
+  if (c.includes("7400")) return 850000;
+  if (c.includes("7300")) return 740000;
+  if (c.includes("7025")) return 500000;
+  if (c.includes("6400")) return 450000;
+  if (c.includes("6300")) return 420000;
+  
+  return currentScore || 500000;
+}
+
+function getReliableLaunchDate(name: string, sheetDate: string): string {
+  if (sheetDate && /^\d{4}-\d{2}$/.test(sheetDate)) {
+    return sheetDate;
+  }
+
+  const n = name.toLowerCase();
+  
+  // iPhone Series
+  if (n.includes("iphone 17") || n.includes("iphone air")) return "2025-09";
+  if (n.includes("iphone 16")) return "2024-09";
+  if (n.includes("iphone 15")) return "2023-09";
+  if (n.includes("iphone 14")) return "2022-09";
+  if (n.includes("iphone 13")) return "2021-09";
+  
+  // Samsung S Series
+  if (n.includes("s26 ultra") || n.includes("s26 5g") || n.includes("s26+")) return "2026-01";
+  if (n.includes("s25 ultra") || n.includes("s25 5g") || n.includes("s25+")) return "2025-01";
+  if (n.includes("s25 fe")) return "2025-10";
+  if (n.includes("s24 ultra") || n.includes("s24 5g") || n.includes("s24 (snapdragon)") || n.includes("s24+")) return "2024-01";
+  if (n.includes("s23 ultra") || n.includes("s23 5g") || n.includes("s23+")) return "2023-02";
+  
+  // Samsung A/M/F series
+  if (n.includes("galaxy m56")) return "2025-04";
+  if (n.includes("galaxy m17")) return "2026-03";
+  if (n.includes("galaxy a37")) return "2026-03";
+  if (n.includes("galaxy a17")) return "2026-03";
+  if (n.includes("galaxy a07")) return "2026-01";
+  if (n.includes("galaxy f56")) return "2025-04";
+  if (n.includes("galaxy f70e")) return "2025-09";
+  if (n.includes("galaxy a36")) return "2025-03";
+  if (n.includes("galaxy a57")) return "2026-03";
+  if (n.includes("galaxy f36")) return "2025-03";
+  
+  // OnePlus Series
+  if (n.includes("oneplus 15")) return "2025-01";
+  if (n.includes("oneplus 15r")) return "2025-10";
+  if (n.includes("oneplus 13") || n.includes("oneplus 13r")) return "2025-01";
+  if (n.includes("oneplus 13s")) return "2025-05";
+  if (n.includes("oneplus nord 6")) return "2025-07";
+  if (n.includes("oneplus nord 5")) return "2024-07";
+  if (n.includes("oneplus nord ce 6")) return "2025-04";
+  if (n.includes("oneplus nord ce 5")) return "2024-04";
+  if (n.includes("oneplus nord ce 4")) return "2024-04";
+  
+  // POCO Series
+  if (n.includes("poco x8 pro max") || n.includes("poco x8 pro") || n.includes("poco x8")) return "2026-01";
+  if (n.includes("poco x7 pro") || n.includes("poco x7")) return "2025-01";
+  if (n.includes("poco f7")) return "2025-05";
+  if (n.includes("poco m8")) return "2025-05";
+  if (n.includes("poco m7 pro") || n.includes("poco m7 plus") || n.includes("poco m7")) return "2024-09";
+  if (n.includes("poco c85")) return "2025-09";
+  if (n.includes("poco c75")) return "2024-11";
+  
+  // iQOO Series
+  if (n.includes("iqoo 15r") || n.includes("iqoo 15")) return "2025-12";
+  if (n.includes("iqoo 13")) return "2024-12";
+  if (n.includes("neo 10")) return "2024-12";
+  if (n.includes("iqoo z10")) return "2024-09";
+  if (n.includes("iqoo z11")) return "2025-04";
+  
+  // Vivo Series
+  if (n.includes("vivo x300")) return "2025-11";
+  if (n.includes("vivo x200")) return "2024-10";
+  if (n.includes("vivo v70")) return "2025-09";
+  if (n.includes("vivo v60")) return "2025-03";
+  if (n.includes("vivo t5 pro") || n.includes("vivo t5x")) return "2025-02";
+  if (n.includes("vivo t4 pro") || n.includes("vivo t4 ultra") || n.includes("vivo t4 lite") || n.includes("vivo t4")) return "2024-09";
+  
+  // OPPO Series
+  if (n.includes("oppo find x9")) return "2025-11";
+  if (n.includes("oppo reno 15")) return "2025-06";
+  if (n.includes("oppo reno 14")) return "2025-01";
+  if (n.includes("oppo k13")) return "2024-11";
+  if (n.includes("oppo k14")) return "2025-05";
+  if (n.includes("oppo f33")) return "2025-03";
+  if (n.includes("oppo f31")) return "2024-09";
+  
+  // Realme Series
+  if (n.includes("realme gt 7t") || n.includes("realme gt 7 pro")) return "2024-11";
+  if (n.includes("realme 15 pro") || n.includes("realme 15")) return "2025-01";
+  if (n.includes("realme 16 pro") || n.includes("realme 16")) return "2025-07";
+  if (n.includes("realme p4")) return "2025-04";
+  if (n.includes("realme p3")) return "2025-04";
+  if (n.includes("realme p1")) return "2024-04";
+  if (n.includes("realme narzo 90")) return "2025-03";
+  if (n.includes("realme narzo 80")) return "2024-09";
+  
+  // Motorola Series
+  if (n.includes("edge 70")) return "2025-05";
+  if (n.includes("edge 60")) return "2024-09";
+  if (n.includes("moto g67")) return "2025-01";
+  if (n.includes("moto g86")) return "2025-09";
+  if (n.includes("moto g45")) return "2024-08";
+  if (n.includes("moto g64")) return "2024-04";
+  if (n.includes("moto g35")) return "2024-09";
+  if (n.includes("razr fold")) return "2025-07";
+  if (n.includes("motorola signature")) return "2025-10";
+
+  return "2024-09";
+}
 
 function parseSheetRow(row: Record<string, string>): PhoneSpec {
+  let brand = (row.brand || "").trim();
+  const b = brand.toUpperCase();
+  if (b === "OPPO") brand = "OPPO";
+  else if (b === "IQOO") brand = "iQOO";
+  else if (b === "POCO") brand = "POCO";
+  else if (b === "APPLE") brand = "Apple";
+  else if (b === "GOOGLE") brand = "Google";
+  else if (b === "SAMSUNG") brand = "Samsung";
+  else if (b === "ONEPLUS") brand = "OnePlus";
+  else if (b === "REALME") brand = "Realme";
+  else if (b === "MOTOROLA" || b === "MOTO") brand = "Motorola";
+  else if (b === "NOTHING") brand = "Nothing";
+  else if (b === "VIVO") brand = "Vivo";
+  else if (b === "XIAOMI") brand = "Xiaomi";
+  else if (b === "INFINIX") brand = "Infinix";
+  else if (b === "TECNO") brand = "Tecno";
+
+  let name = (row.name || "").trim();
+  // Strip 5G case-insensitively
+  name = name.replace(/\b5G\b/gi, "").replace(/\s+/g, " ").trim();
+
+  // Also fix name prefix to match clean brand name
+  const oldBrandPrefix = (row.brand || "").trim() + " ";
+  const newBrandPrefix = brand + " ";
+  if (name.toLowerCase().startsWith(oldBrandPrefix.toLowerCase())) {
+    name = newBrandPrefix + name.slice(oldBrandPrefix.length);
+  }
+
+  const rawAntutu = Number(row.antutu_score) || 0;
+  const antutu_score = getReliableAnTuTu(row.cpu_name || "", rawAntutu);
+
+  const derivedCpuScore = Math.max(1, Math.min(10, (antutu_score / 3300000) * 9 + 1));
+  const raw_cpu_score = Number(row.raw_cpu_score) || derivedCpuScore;
+
+  const launch_date = getReliableLaunchDate(name, row.launch_date || "");
+
   return {
-    id: row.id || "", name: row.name || "", brand: row.brand || "",
+    id: row.id || "", name: name, brand: brand,
     price_inr: Number(row.price_inr) || 0, image_url: row.image_url || "",
-    launch_date: row.launch_date || "", cpu_name: row.cpu_name || "",
-    raw_cpu_score: Number(row.raw_cpu_score) || 0, raw_ui_score: Number(row.raw_ui_score) || 0,
+    launch_date: launch_date, cpu_name: row.cpu_name || "",
+    raw_cpu_score: raw_cpu_score, raw_ui_score: Number(row.raw_ui_score) || 0,
     os_updates_years: Number(row.os_updates_years) || 0, battery_mah: Number(row.battery_mah) || 0,
     charging_w: Number(row.charging_w) || 0, main_camera_score: Number(row.main_camera_score) || 0,
     front_camera_score: Number(row.front_camera_score) || 0,
     display_refresh_hz: Number(row.display_refresh_hz) || 0,
     build_quality_score: Number(row.build_quality_score) || 0,
-    antutu_score: Number(row.antutu_score) || 0,
+    antutu_score: antutu_score,
     storage_type: row.storage_type || "UFS 2.2",
     ram_type: row.ram_type || "LPDDR4X",
     screen_type: row.screen_type || "IPS LCD",
@@ -41,6 +312,8 @@ export default function App() {
   const [selectedPhoneId, setSelectedPhoneId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("match");
   const [comparedIds, setComparedIds] = useState<string[]>([]);
+  const [highlightCompare, setHighlightCompare] = useState(false);
+  const [showComparePopup, setShowComparePopup] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("pa_wizard_done"));
@@ -137,6 +410,24 @@ export default function App() {
   const availableScreenTypes = useMemo(() => [...new Set(rawPhones.map(p => p.screen_type).filter(Boolean))].sort(), [rawPhones]);
   const availableRamTypes = useMemo(() => [...new Set(rawPhones.map(p => p.ram_type).filter(Boolean))].sort(), [rawPhones]);
   const availableStorageTypes = useMemo(() => [...new Set(rawPhones.map(p => p.storage_type).filter(Boolean))].sort(), [rawPhones]);
+  
+  const availableStorageCapacities = useMemo(() => {
+    const capacities = new Set<number>();
+    rawPhones.forEach(p => {
+      const { storage } = getRamStorage(p.name);
+      if (storage > 0) capacities.add(storage);
+    });
+    return [...capacities].sort((a, b) => a - b);
+  }, [rawPhones]);
+
+  const availableRamCapacities = useMemo(() => {
+    const capacities = new Set<number>();
+    rawPhones.forEach(p => {
+      const { ram } = getRamStorage(p.name);
+      if (ram > 0) capacities.add(ram);
+    });
+    return [...capacities].sort((a, b) => a - b);
+  }, [rawPhones]);
   const availableProcessorTiers = useMemo(() => {
     const tiers = new Set<string>();
     rawPhones.forEach(p => {
@@ -164,7 +455,18 @@ export default function App() {
       if (filters.screenTypes.length > 0 && !filters.screenTypes.some(st => p.screen_type.includes(st))) return false;
       if (filters.ramTypes.length > 0 && !filters.ramTypes.includes(p.ram_type)) return false;
       if (filters.storageTypes.length > 0 && !filters.storageTypes.includes(p.storage_type)) return false;
-      if (filters.minCameraScore > 0 && p.main_camera_score < filters.minCameraScore) return false;
+      
+      if (filters.storageCapacities && filters.storageCapacities.length > 0) {
+        const { storage } = getRamStorage(p.name);
+        if (!filters.storageCapacities.includes(storage)) return false;
+      }
+      
+      if (filters.ramCapacities && filters.ramCapacities.length > 0) {
+        const { ram } = getRamStorage(p.name);
+        if (!filters.ramCapacities.includes(ram)) return false;
+      }
+
+      if (filters.minCameraScore > 0 && p.ratings.camera < filters.minCameraScore) return false;
       if (filters.minOsYears > 0 && p.os_updates_years < filters.minOsYears) return false;
       // Search
       if (searchQuery) {
@@ -187,6 +489,8 @@ export default function App() {
     if (sortBy === "os") return list.sort((a, b) => b.ratings.os - a.ratings.os);
     if (sortBy === "battery") return list.sort((a, b) => b.battery_mah - a.battery_mah);
     if (sortBy === "newest") return list.sort((a, b) => b.launch_date.localeCompare(a.launch_date));
+    if (sortBy === "ram") return list.sort((a, b) => getRamStorage(b.name).ram - getRamStorage(a.name).ram);
+    if (sortBy === "storage") return list.sort((a, b) => getRamStorage(b.name).storage - getRamStorage(a.name).storage);
     return list;
   }, [sortedPhones, sortBy]);
 
@@ -196,8 +500,11 @@ export default function App() {
     const map: Record<string, string[]> = {};
     const addBadge = (id: string, badge: string) => { map[id] = [...(map[id] || []), badge]; };
     const best = (key: (p: typeof filteredPhones[0]) => number, badge: string) => {
-      const sorted = [...filteredPhones].sort((a, b) => key(b) - key(a));
-      if (sorted[0]) addBadge(sorted[0].id, badge);
+      if (filteredPhones.length === 0) return;
+      const topScore = Math.max(...filteredPhones.map(key));
+      filteredPhones.forEach(p => {
+        if (key(p) === topScore) addBadge(p.id, badge);
+      });
     };
     best(p => p.ratings.performance, "⚡ Best Performance");
     best(p => p.ratings.camera, "📸 Best Camera");
@@ -209,7 +516,22 @@ export default function App() {
   const comparedPhones = useMemo(() => phonesWithRatings.filter((p) => comparedIds.includes(p.id)), [phonesWithRatings, comparedIds]);
 
   const toggleCompare = useCallback((id: string) => {
-    setComparedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 4 ? [...prev, id] : prev);
+    setComparedIds((prev) => {
+      const isAdding = !prev.includes(id);
+      if (isAdding && prev.length < 4) {
+        setHighlightCompare(true);
+        setShowComparePopup(true);
+        // Reset wiggle highlight after 800ms
+        setTimeout(() => {
+          setHighlightCompare(false);
+        }, 800);
+        // Automatically hide popup after 4 seconds
+        setTimeout(() => {
+          setShowComparePopup(false);
+        }, 4000);
+      }
+      return isAdding ? (prev.length < 4 ? [...prev, id] : prev) : prev.filter((x) => x !== id);
+    });
   }, []);
 
   const handleWizardComplete = useCallback((wizardFilters: FilterConfig) => {
@@ -237,6 +559,14 @@ export default function App() {
     filters.screenTypes.forEach(st => pills.push({ label: st, onRemove: () => setFilters(f => ({ ...f, screenTypes: f.screenTypes.filter(x => x !== st) })) }));
     filters.ramTypes.forEach(rt => pills.push({ label: rt, onRemove: () => setFilters(f => ({ ...f, ramTypes: f.ramTypes.filter(x => x !== rt) })) }));
     filters.storageTypes.forEach(st => pills.push({ label: st, onRemove: () => setFilters(f => ({ ...f, storageTypes: f.storageTypes.filter(x => x !== st) })) }));
+    (filters.storageCapacities || []).forEach(sc => pills.push({ 
+      label: sc >= 1024 ? `${sc/1024}TB Storage` : `${sc}GB Storage`, 
+      onRemove: () => setFilters(f => ({ ...f, storageCapacities: f.storageCapacities.filter(x => x !== sc) })) 
+    }));
+    (filters.ramCapacities || []).forEach(rc => pills.push({ 
+      label: `${rc}GB RAM`, 
+      onRemove: () => setFilters(f => ({ ...f, ramCapacities: f.ramCapacities.filter(x => x !== rc) })) 
+    }));
     if (filters.minCameraScore > 0) pills.push({ label: `Camera ${filters.minCameraScore}+`, onRemove: () => setFilters(f => ({ ...f, minCameraScore: 0 })) });
     if (filters.minOsYears > 0) pills.push({ label: `${filters.minOsYears}yr+ updates`, onRemove: () => setFilters(f => ({ ...f, minOsYears: 0 })) });
     return pills;
@@ -281,10 +611,36 @@ export default function App() {
               <button onClick={() => setView("discover")} className={`px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${view === "discover" ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" : "text-neutral-500 hover:text-neutral-700"}`}>
                 <span className="flex items-center gap-2"><Search size={14} /> Browse</span>
               </button>
-              <button onClick={() => setView("compare")} className={`relative px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${view === "compare" ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" : "text-neutral-500 hover:text-neutral-700"}`}>
-                <span className="flex items-center gap-2"><Layers size={14} /> Compare</span>
-                {comparedIds.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setView("compare")} 
+                  className={`relative px-4 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-all duration-300 ${
+                    view === "compare" 
+                      ? "bg-white text-blue-600 shadow-sm border border-neutral-200/50" 
+                      : "text-neutral-500 hover:text-neutral-700"
+                  } ${highlightCompare ? "animate-wiggle border-blue-500 ring-2 ring-blue-500/70 bg-blue-50 text-blue-700 font-extrabold shadow" : ""}`}
+                >
+                  <span className="flex items-center gap-2"><Layers size={14} /> Compare</span>
+                  {comparedIds.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
+                </button>
+
+                {showComparePopup && (
+                  <div className="absolute top-full mt-3 right-0 w-64 bg-blue-600 text-white rounded-xl p-3.5 shadow-2xl z-[999] border border-blue-500 animate-fade-in-up">
+                    <div className="absolute bottom-full right-8 w-3 h-3 bg-blue-600 rotate-45 transform translate-y-1.5" />
+                    <div className="flex items-start justify-between gap-2.5">
+                      <p className="text-[11px] font-bold leading-relaxed">
+                        ✨ Device added! Click here to open the Comparison Matrix and view the head-to-head battle.
+                      </p>
+                      <button 
+                        onClick={() => setShowComparePopup(false)} 
+                        className="text-blue-200 hover:text-white flex-shrink-0"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             {/* Mobile tabs */}
             <div className="flex sm:hidden items-center gap-1.5 relative">
@@ -312,10 +668,36 @@ export default function App() {
                 </div>
               )}
               <button onClick={() => setView("discover")} className={`p-2 rounded transition-colors ${view === "discover" ? "bg-blue-50 text-blue-600" : "text-neutral-500"}`}><Search size={18} /></button>
-              <button onClick={() => setView("compare")} className={`relative p-2 rounded transition-colors ${view === "compare" ? "bg-blue-50 text-blue-600" : "text-neutral-500"}`}>
-                <Layers size={18} />
-                {comparedIds.length > 0 && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-blue-600 text-[8px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setView("compare")} 
+                  className={`relative p-2 rounded transition-all duration-300 ${
+                    view === "compare" 
+                      ? "bg-blue-50 text-blue-600" 
+                      : "text-neutral-500"
+                  } ${highlightCompare ? "animate-wiggle ring-2 ring-blue-500/70 bg-blue-100 text-blue-700" : ""}`}
+                >
+                  <Layers size={18} />
+                  {comparedIds.length > 0 && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-blue-600 text-[8px] font-bold text-white flex items-center justify-center">{comparedIds.length}</span>}
+                </button>
+
+                {showComparePopup && (
+                  <div className="absolute top-full mt-3 right-0 w-48 bg-blue-600 text-white rounded-xl p-2.5 shadow-2xl z-[999] border border-blue-500 animate-fade-in-up">
+                    <div className="absolute bottom-full right-3.5 w-2.5 h-2.5 bg-blue-600 rotate-45 transform translate-y-1.5" />
+                    <div className="flex items-start justify-between gap-1.5">
+                      <p className="text-[10px] font-bold leading-normal">
+                        Added! Tap here to compare.
+                      </p>
+                      <button 
+                        onClick={() => setShowComparePopup(false)} 
+                        className="text-blue-200 hover:text-white flex-shrink-0"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <button onClick={() => setMobileFilterOpen(!mobileFilterOpen)} className="lg:hidden p-2 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
               <SlidersHorizontal size={20} />
@@ -480,6 +862,20 @@ export default function App() {
         </div>
       )}
 
+      {selectedPhoneId ? (
+        <PhoneDetail 
+          phone={phonesWithRatings.find(p => p.id === selectedPhoneId)!} 
+          onClose={() => setSelectedPhoneId(null)} 
+          allPhones={phonesWithRatings}
+          onSelectPhone={setSelectedPhoneId}
+          weights={filters.weights}
+          onCompareAll={(ids) => {
+            setComparedIds(ids);
+            setView("compare");
+            setSelectedPhoneId(null);
+          }}
+        />
+      ) : (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {view === "compare" && (
           <div>
@@ -491,7 +887,7 @@ export default function App() {
                 <button onClick={() => setView("discover")} className="px-6 py-2.5 rounded bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors">Browse Database</button>
               </div>
             ) : (
-              <ComparisonMatrix phones={comparedPhones} onRemove={toggleCompare} />
+              <ComparisonMatrix phones={comparedPhones} onRemove={toggleCompare} weights={filters.weights} />
             )}
           </div>
         )}
@@ -504,7 +900,9 @@ export default function App() {
                 <FilterSidebar
                   brands={brands} filters={filters} onFilterChange={setFilters}
                   availableScreenTypes={availableScreenTypes} availableRamTypes={availableRamTypes}
-                  availableStorageTypes={availableStorageTypes} availableProcessorTiers={availableProcessorTiers}
+                  availableStorageTypes={availableStorageTypes} 
+                  availableStorageCapacities={availableStorageCapacities} availableRamCapacities={availableRamCapacities}
+                  availableProcessorTiers={availableProcessorTiers}
                   phoneCount={finalSortedPhones.length}
                 />
               </div>
@@ -519,7 +917,9 @@ export default function App() {
                   <FilterSidebar
                     brands={brands} filters={filters} onFilterChange={setFilters}
                     availableScreenTypes={availableScreenTypes} availableRamTypes={availableRamTypes}
-                    availableStorageTypes={availableStorageTypes} availableProcessorTiers={availableProcessorTiers}
+                    availableStorageTypes={availableStorageTypes} 
+                    availableStorageCapacities={availableStorageCapacities} availableRamCapacities={availableRamCapacities}
+                    availableProcessorTiers={availableProcessorTiers}
                     phoneCount={finalSortedPhones.length}
                   />
                 </div>
@@ -541,19 +941,38 @@ export default function App() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-200">
-                <p className="font-semibold text-neutral-700 text-sm sm:text-base">{loading ? "Loading database..." : `${finalSortedPhones.length} matches found`}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest font-semibold hidden sm:inline">Sort by:</span>
-                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="text-[10px] sm:text-xs font-bold p-1 sm:p-1.5 rounded border border-neutral-200 bg-white text-neutral-700 outline-none cursor-pointer">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 pb-4 border-b border-neutral-200 gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <p className="font-semibold text-neutral-700 text-sm sm:text-base">{loading ? "Loading..." : `${finalSortedPhones.length} matches`}</p>
+                  
+                  {/* Quick Sort Tabs */}
+                  <div className="hidden md:flex items-center bg-neutral-100 p-1 rounded-lg border border-neutral-200/60">
+                    {[
+                      { id: "performance", label: "Processor", icon: <Zap size={12} /> },
+                      { id: "camera", label: "Camera", icon: <Camera size={12} /> },
+                      { id: "os", label: "OS", icon: <Smartphone size={12} /> },
+                      { id: "price_asc", label: "Price (Low)", icon: <span className="text-[10px] font-extrabold">₹</span> },
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setSortBy(tab.id as SortOption)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-md transition-all ${sortBy === tab.id ? "bg-white text-blue-700 shadow-sm ring-1 ring-neutral-200" : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"}`}
+                      >
+                        {tab.icon} {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <span className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-widest font-semibold hidden sm:inline">Other sorts:</span>
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="text-[10px] sm:text-xs font-bold p-1.5 rounded border border-neutral-200 bg-white text-neutral-700 outline-none cursor-pointer">
                     <option value="match">Match Score</option>
-                    <option value="price_asc">Price: Low to High</option>
                     <option value="price_desc">Price: High to Low</option>
-                    <option value="performance">Best Performance</option>
-                    <option value="camera">Best Camera</option>
-                    <option value="os">Best Operating System</option>
                     <option value="battery">Largest Battery</option>
                     <option value="newest">Newest First</option>
+                    <option value="ram">Highest RAM</option>
+                    <option value="storage">Highest Storage</option>
                   </select>
                 </div>
               </div>
@@ -582,9 +1001,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {selectedPhoneId && (
-        <PhoneDetail phone={phonesWithRatings.find(p => p.id === selectedPhoneId)!} onClose={() => setSelectedPhoneId(null)} />
       )}
 
       <SpecGuideModal isOpen={showSpecGuide} onClose={() => setShowSpecGuide(false)} />

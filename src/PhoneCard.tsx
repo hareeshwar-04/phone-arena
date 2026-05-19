@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Zap, Shield, Camera, Star, Cpu, Battery, AlertTriangle, Plus, X, Monitor, ShoppingCart, Smartphone, Calendar } from "lucide-react";
 import type { PhoneWithRatings, WeightConfig } from "./types";
 import { formatINR } from "./types";
-import { getOSUpdatesStatus } from "./hooks";
+import { getOSUpdatesStatus, calcMatchScore } from "./hooks";
 
 export function SkeletonCard() {
   return (
@@ -32,18 +32,7 @@ export function PhoneCard({ phone, isCompared, onToggle, weights, onSelect, badg
   badges?: string[];
 }) {
   const [showBuyOptions, setShowBuyOptions] = useState(false);
-  const total = 
-    (weights.performanceEnabled ? weights.performance : 0) +
-    (weights.reliabilityEnabled ? weights.reliability : 0) +
-    (weights.cameraEnabled ? weights.camera : 0) +
-    (weights.osEnabled ? weights.os : 0) || 1;
-    
-  const customScore = Math.round(((
-    (weights.performanceEnabled ? phone.ratings.performance * weights.performance : 0) +
-    (weights.reliabilityEnabled ? phone.ratings.reliability * weights.reliability : 0) +
-    (weights.cameraEnabled ? phone.ratings.camera * weights.camera : 0) +
-    (weights.osEnabled ? phone.ratings.os * weights.os : 0)
-  ) / total) * 10) / 10;
+  const customScore = calcMatchScore(phone, weights);
   const hasBloat = phone.raw_ui_score < 6.0;
   const osStatus = getOSUpdatesStatus(phone.launch_date, phone.os_updates_years);
 
